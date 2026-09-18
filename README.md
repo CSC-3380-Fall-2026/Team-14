@@ -1,6 +1,6 @@
-# [Name of the Project] : [Team Number]
+# Geaux Travel : Team 14
 # Members
-Project Manager: [Name] ([GitHub Name])\
+Project Manager: Karter Fleetwood (KFleet5)\
 Communications Lead: [Name] ([GitHub Name])\
 Git Master: [Name] ([GitHub Name])\
 Design Lead: [Name] ([GitHub Name])\
