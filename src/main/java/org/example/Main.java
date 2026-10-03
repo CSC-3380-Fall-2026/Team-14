@@ -25,7 +25,7 @@ public class Main {
 
 
         Map<String, String> auth = new HashMap<>();
-        auth.put("api_key", "d5db28d49bc0c7135cba2bd2f203331ece06af7374d89f5aefd0897e56c05d6a");
+        auth.put("api_key", "key");
 
         SerpApi client = new SerpApi(auth);
 
