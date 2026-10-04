@@ -1,7 +1,7 @@
 # Geaux Travel : Team 14
 # Members
 Project Manager: Karter Fleetwood (KFleet5)\
-Communications Lead: [Name] ([GitHub Name])\
+Communications Lead: Jaylah Carter ([JaylahC28])\
 Git Master: [Name] ([GitHub Name])\
 Design Lead: [Name] ([GitHub Name])\
 Quality Assurance Tester: [Name] ([GitHub Name])
