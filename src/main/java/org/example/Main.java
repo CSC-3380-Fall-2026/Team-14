@@ -48,14 +48,9 @@ public class Main {
         //GOOD - this returns the FIRST flight: info
         JsonObject firstFlight = flights.get(0).getAsJsonObject();
 
-        ///
-
 
         //This puts us at the flights array
         JsonArray nested_firstFlights = firstFlight.getAsJsonArray("flights");
-
-
-
 
 
         //This puts us IN the flights array
@@ -88,63 +83,17 @@ public class Main {
         String layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
         Boolean layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
 
-
-        System.out.println("departure airport"+ leave_airportName+ leave_airportCode+ leave_departureTime+
-                "\narrival airport"+arrive_airportName+ arrive_airportCode+ arrive_departureTime+
-                "\n duration"+ duration+ "airline"+ airline+ "travel class end\n");
-
-        //JsonArray firstFlight2 = firstFlight.get("departure_airport").getAsJsonArray();
-
-        //String name = firstFlight2.get("name").getAsString();
-
-        //System.out.println("name: " + name);
-
-        //firstFlight. ("arrival_time");
-        ////JsonArray departure = firstFlight.get("departure_airport").getAsJsonArray();
-        //String airline_name = departure.get(1).getAsString();
-
-        //String leave = firstFlight.get("departure_airport").getAsString();
+        //test
+        System.out.println("departure airport "+ leave_airportName + leave_airportCode+ leave_departureTime +
+                "\n arrival airport"+arrive_airportName+ arrive_airportCode+ arrive_departureTime+
+                "\n duration "+ duration+ " airline "+ airline+ " travel class -end\n");
 
 
-//        JsonObject departureAirport = firstFlight.getAsJsonObject("departure_airport");
-//
-//        // 4. Step 3: Call the internal keys inside the departure object safely
-//        String airportName = departureAirport.has("name") ? departureAirport.get("name").getAsString() : "N/A";
-//        String airportId   = departureAirport.has("id")   ? departureAirport.get("id").getAsString()   : "N/A";
-//        String departureTime = departureAirport.has("time") ? departureAirport.get("time").getAsString() : "N/A";
-//
-//        // Print the extracted values
-//        System.out.println("Airport Name: " + airportName);
-//        System.out.println("Airport Code: " + airportId);
-//        System.out.println("Departure Time: " + departureTime);
-//
-//        // 2. Extract the second JSON object (Index 1) from the array
 //        //JsonObject jsonObject = jsonArray.get(1).getAsJsonObject();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println(gson.toJson(bestFlights));
         //System.out.println(gson.toJson(firstFlight2));
 
-
-
-        //JsonObject leave_airport = flights.getAsJsonObject();
-
-
-//        for (JsonElement flightElement : flights) {
-//            if (flightElement.isJsonNull()) {System.out.println( "flight element is empty");}
-//
-//            JsonObject flight = flightElement.getAsJsonObject();
-//
-//
-//            JsonArray leave_airport = flight.get("departure_airport").getAsJsonArray();
-//            String name = leave_airport.get("name").getAsString();
-//
-//            System.out.println("Departure airport name : " + name);
-//
-//
-//
-//            // Extracts the price of the flights and prints it
-//
-//        }
 
 
 
