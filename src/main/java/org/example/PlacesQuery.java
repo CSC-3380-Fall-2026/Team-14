@@ -44,12 +44,38 @@ public class PlacesQuery {
                 System.out.println("Places search failed.");
                 return;
             }
+            
+            //Resturant generator 
+            JsonObject search_result =  //reads my reply 
+                JsonParser.parseString(response.body()).getAsJsonObject(); 
+            JsonArray places = search_result.getAsJsonArray("features"); // gets the list of places 
 
-            JsonObject search_result = 
-                JsonParser.parseString(response.body()).getAsJsonObject();
-            JsonArray places = search_result.getAsJsonArray("features");
+            System.out.println("Places found: " + places.size()); // prints how mnay places were actually found
 
-            System.out.println("Places found: " + places.size());
+            if (places.size() == 0) {
+                System.out.println("No returants found nearby."); // stops if nothing was found
+                return;
+            }
+
+            // random number generator 
+            Random random = new Random();
+            int random_index = random.nextInt(places.size()); //picks between 0 & 20 
+
+            JsonObject selected_place = 
+                places.get(random_index).getAsJsonObject(); 
+
+            JsonObject place_details = 
+                selected_place.getAsJsonObject("properties"); //gets the name & address
+            
+            // Name Check 
+            if (place_details.has("name")
+                && !place_details.get("name").isJsonNull()) {
+            String restaurant_name = place_details.get("name").getAsString();
+                System.out.println("Restaurant: " + restaurant_name);
+        } else { 
+            System.out.println("Selected retaurant has no listed name.");
+        }
+    
     }
     
 }
