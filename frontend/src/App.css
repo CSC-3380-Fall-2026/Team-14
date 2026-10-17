@@ -1,0 +1,39 @@
+.site {
+  min-height: 100vh;
+}
+
+.site-header {
+  padding: 24px clamp(24px, 7vw, 100px);
+  border-bottom: 1px solid #e8e0ec;
+}
+
+.site-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #5d4272;
+}
+
+.home {
+  max-width: 680px;
+  padding: clamp(72px, 12vw, 150px) clamp(24px, 7vw, 100px);
+}
+
+.eyebrow {
+  margin: 0 0 14px;
+  color: #705783;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.home h1 {
+  margin: 0 0 20px;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  line-height: 1.1;
+}
+
+.home > p:last-child {
+  max-width: 550px;
+  margin: 0;
+  line-height: 1.6;
+  color: #514956;
+}
