@@ -1,0 +1,29 @@
+.site {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header {
+  padding: 24px clamp(24px, 7vw, 100px);
+  border-bottom: 1px solid #c8b6ea;
+}
+
+.site-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #302a36;
+  text-decoration: none;
+}
+
+.site-name:focus-visible {
+  outline: 2px solid #705783;
+  outline-offset: 4px;
+}
+
+.site-footer {
+  padding: 24px clamp(24px, 7vw, 100px);
+  border-top: 1px solid #c8b6ea;
+  color: #514956;
+  font-size: 0.9rem;
+}
