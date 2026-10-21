@@ -80,15 +80,22 @@ public class Main {
             String airline = nested_nested_firstFlights.has("airline") ? nested_nested_firstFlights.get("airline").getAsString() : "N/A";
             String travel_class = nested_nested_firstFlights.has("travel_class") ? nested_nested_firstFlights.get("travel_class").getAsString() : "N/A";
             String flight_number = nested_nested_firstFlights.has("flight_number") ? nested_nested_firstFlights.get("flight_number").getAsString() : "N/A";
-            Boolean flight_overnight = nested_nested_firstFlights.has("flight_number") ? nested_nested_firstFlights.get("flight_number").getAsBoolean() : false;
+            Boolean flight_overnight = nested_nested_firstFlights.has("overnight") ? nested_nested_firstFlights.get("overnight").getAsBoolean() : false;
             Integer price = nested_nested_firstFlights.has("price") ? nested_nested_firstFlights.get("price").getAsInt() : 0;
 
             //This puts us IN the layover array
-            JsonObject layovers = nested_firstFlights.get(1).getAsJsonObject();
-            Integer layover_duration = layovers.has("duration") ? layovers.get("duration").getAsInt() : 0;
-            String layover_name = layovers.has("name") ? layovers.get("name").getAsString() : "N/A";
-            String layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
-            Boolean layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
+            if (!nested_firstFlights.isJsonNull()) {
+                JsonObject layovers = nested_firstFlights.get(1).getAsJsonObject();
+                Integer layover_duration = layovers.has("duration") ? layovers.get("duration").getAsInt() : 0;
+                String layover_name = layovers.has("name") ? layovers.get("name").getAsString() : "N/A";
+                String layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
+                Boolean layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
+            }
+
+            switch(nested_firstFlights.get(1).getAsJsonObject()):
+
+            case layovers.has("duration"):
+
 
             //test - use this to check if the data retrieved is right
             //System.out.println("departure airport "+ leave_airportName + leave_airportCode+ leave_departureTime +
@@ -110,7 +117,7 @@ public class Main {
 
             all_flight_data.put(dynamicReferenceName, temp_flight_data);
         }
-
+        flight_number
         //gets the info for the flights; should make into a for loop when implementing to website
         FlightQueury flight_data_1 = all_flight_data.get("flight_data_1");
         System.out.print ("layover name: "+ flight_data_1.layover_name + " price: " + flight_data_1.price);
