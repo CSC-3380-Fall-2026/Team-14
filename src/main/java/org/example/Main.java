@@ -9,7 +9,7 @@ public class Main {
 
     public static void main(String[] args) throws SerpApiException {
         //calls generateFlight with the info from user
-        Map<String, FlightQueury> all_flight_data = generateFlight("MSY", "OGG", "1", "2026-10-21", "2026-10-26");
+        Map<String, FlightQueury> all_flight_data = generateFlight("SFO", "OGG", "1", "2026-10-21", "2026-10-26");
 
     }
 
@@ -30,11 +30,10 @@ public class Main {
 
         //API stuff - feeding it the parameters
         Map<String, String> auth = new HashMap<>();
-        auth.put("api_key", "api key");
+        auth.put("api_key", "2a08f689c84c17f7f6854e4b1d94ad256de924d083cbf0181107a9910fa3d23e");
         SerpApi client = new SerpApi(auth);
         Map<String, String> params = new HashMap<>();
         params.put("engine", "google_flights");
-        params.put("q", "Baton Rouge to Denver");
         params.put("departure_id", destination_airport);
         params.put("arrival_id", departure_airport);
         params.put("type", type);
@@ -81,7 +80,7 @@ public class Main {
             String travel_class = nested_nested_firstFlights.has("travel_class") ? nested_nested_firstFlights.get("travel_class").getAsString() : "N/A";
             String flight_number = nested_nested_firstFlights.has("flight_number") ? nested_nested_firstFlights.get("flight_number").getAsString() : "N/A";
             Boolean flight_overnight = nested_nested_firstFlights.has("overnight") ? nested_nested_firstFlights.get("overnight").getAsBoolean() : false;
-            Integer price = nested_nested_firstFlights.has("price") ? nested_nested_firstFlights.get("price").getAsInt() : 0;
+            Integer price = firstFlight.has("price") ? firstFlight.get("price").getAsInt() : 0;
 
             Integer layover_duration = 0;
             String layover_name = "";
@@ -120,9 +119,14 @@ public class Main {
 
             all_flight_data.put(dynamicReferenceName, temp_flight_data);
         }
-        //gets the info for the flights; should make into a for loop when implementing to website
-        FlightQueury flight_data_1 = all_flight_data.get("flight_data_1");
-        System.out.print ("layover name: "+ flight_data_1.layover_name + " price: " + flight_data_1.price);
+        //gets the info for the flights and prints to the terminal
+        for (Map.Entry<String, FlightQueury> entry : all_flight_data.entrySet()) {
+            FlightQueury flight = entry.setValue(entry.getValue());
+            System.out.print ("\n |departure airport name: " + flight.leave_airportName + " | duration: " +
+                    flight.duration + "mins"+ " | arrival airport name: " + flight.arrive_airportName + " | flight layover name: " +
+                    flight.layover_name + " overnight layover?: " + flight.flight_overnight +
+                    " | price: $" + flight.price + "USD" + " | airline: " + flight.airline + "|");
+        }
 
         return all_flight_data;
     }
