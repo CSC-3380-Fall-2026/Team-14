@@ -83,18 +83,21 @@ public class Main {
             Boolean flight_overnight = nested_nested_firstFlights.has("overnight") ? nested_nested_firstFlights.get("overnight").getAsBoolean() : false;
             Integer price = nested_nested_firstFlights.has("price") ? nested_nested_firstFlights.get("price").getAsInt() : 0;
 
+            Integer layover_duration = 0;
+            String layover_name = "";
+            String layover_id = "";
+            Boolean layover_overnight = false;
+
+
             //This puts us IN the layover array
             if (!nested_firstFlights.isJsonNull()) {
                 JsonObject layovers = nested_firstFlights.get(1).getAsJsonObject();
-                Integer layover_duration = layovers.has("duration") ? layovers.get("duration").getAsInt() : 0;
-                String layover_name = layovers.has("name") ? layovers.get("name").getAsString() : "N/A";
-                String layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
-                Boolean layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
+                layover_duration = layovers.has("duration") ? layovers.get("duration").getAsInt() : 0;
+                layover_name = layovers.has("name") ? layovers.get("name").getAsString() : "N/A";
+                layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
+                layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
             }
 
-            switch(nested_firstFlights.get(1).getAsJsonObject()):
-
-            case layovers.has("duration"):
 
 
             //test - use this to check if the data retrieved is right
@@ -117,7 +120,6 @@ public class Main {
 
             all_flight_data.put(dynamicReferenceName, temp_flight_data);
         }
-        flight_number
         //gets the info for the flights; should make into a for loop when implementing to website
         FlightQueury flight_data_1 = all_flight_data.get("flight_data_1");
         System.out.print ("layover name: "+ flight_data_1.layover_name + " price: " + flight_data_1.price);
