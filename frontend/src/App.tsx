@@ -1,4 +1,5 @@
 import './App.css'
+import TripPreferences from './TripPreferences'
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
           Pick a place, compare your options, and build an itinerary around
           what you like. We are putting the first pages together now.
         </p>
+
+        <TripPreferences />
       </main>
     </div>
   )
