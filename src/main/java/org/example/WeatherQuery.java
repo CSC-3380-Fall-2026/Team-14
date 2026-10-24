@@ -95,7 +95,7 @@ if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 			 JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
 
 			 if (!root.has("daily") || !root.get("daily").isJsonObject()) {
-				return "Daily forecast data is unavailable. ";
+				return "Daily forecast data is unavailable.";
 			 }
 
 			 JsonObject daily =  root.getAsJsonObject("daily");
@@ -106,11 +106,11 @@ if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 			 JsonArray weatherCodes = daily.getAsJsonArray("weather_code");
 
 			 if (dates == null || highTemperatures == null || lowTemperatures == null || precipitation == null || weatherCodes == null) {
-				return "Incomplete daily forecast data recieved.";
+				return "Incomplete daily forecast data received.";
 			 }
 
 			 if (dates.size() < 7 || highTemperatures.size() < 7 || lowTemperatures.size() < 7 || precipitation.size() < 7 || weatherCodes.size() < 7) {
-				return "Incomplete 7-day forecast recieved.";
+				return "Incomplete 7-day forecast received.";
 
 			 }
 
