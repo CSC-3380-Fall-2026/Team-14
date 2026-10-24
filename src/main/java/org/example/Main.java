@@ -30,7 +30,7 @@ public class Main {
 
         //API stuff - feeding it the parameters
         Map<String, String> auth = new HashMap<>();
-        auth.put("api_key", "2a08f689c84c17f7f6854e4b1d94ad256de924d083cbf0181107a9910fa3d23e");
+        auth.put("api_key", "api key");
         SerpApi client = new SerpApi(auth);
         Map<String, String> params = new HashMap<>();
         params.put("engine", "google_flights");
