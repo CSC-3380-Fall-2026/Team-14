@@ -165,7 +165,7 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
   Active
 </div>
 
-<div>
+<div className="notes-field">
   <label htmlFor="notes">
     Food preferences or notes (optional)
   </label>
