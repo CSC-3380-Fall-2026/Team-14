@@ -22,3 +22,8 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+tasks.register('runPlaces', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.example.PlacesQuery' // indetifying the class that conatins my main method 
+}
