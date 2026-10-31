@@ -22,6 +22,8 @@ Styles Guide(s): [link]
 
 # How to Run Dev and Test Environment
 
+The React and TypeScript website starter is in [`frontend/`](frontend/README.md). From the repository root, run `cd frontend`, `npm install`, and `npm run dev`. Run `npm run lint` and `npm run build` before opening a frontend PR. The Java code and Gradle build are still in the repository root.
+
 ## Dependencies
 - List all dependencies here
 - Don't forget to include versions

@@ -52,10 +52,12 @@ public class WeatherQuery {
 			double apparentTemperature = current.get("apparent_temperature").getAsDouble();
 			double precipitation = current.get("precipitation").getAsDouble();
 			int weatherCode = current.get("weather_code").getAsInt();
+			
+			String weatherDescription = getWeatherDescription(weatherCode);                                                   	
 
 			String result = String.format(
-					"Temperature: %.1f°F\nFeels Like: %.1f°F\nPrecipitation: %.2f in\nWeather Code: %d", temperature,
-					apparentTemperature, precipitation, weatherCode);
+					"Temperature: %.1f°F\nFeels Like: %.1f°F\nPrecipitation: %.2f in\nCondition: %s", temperature,
+					apparentTemperature, precipitation, weatherDescription);
 
 			return result;
 		} catch (Exception e) {
