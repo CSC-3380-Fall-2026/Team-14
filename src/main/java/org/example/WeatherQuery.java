@@ -9,9 +9,15 @@ import java.net.http.HttpResponse;
 import java.net.URI;
 
 public class WeatherQuery {
-
-	public static String getWeatherForecast(double latitude, double longitude) {
-		try {
+	
+			
+	public static String getWeatherForecast(double latitude, double longitude) { 
+		if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+			
+			return "Invalid coordinates.";
+		}
+	
+	try {
 			String url = String.format(
 					"https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f&current=temperature_2m,weather_code,apparent_temperature,precipitation&timezone=auto&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch",
 					latitude, longitude);
@@ -22,10 +28,24 @@ public class WeatherQuery {
 			HttpRequest request = HttpRequest.newBuilder().uri(uri).GET().build();
 
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
+			 if (response.statusCode() != 200) {
+				return "Unable to retrieve weather data.";
+			}
 			JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
+			
+			if (!root.has("current")) {
+				return "Weather data is unavailable for this location.";
+			}
+			
 			JsonObject current = root.getAsJsonObject("current");
-
+			
+			if (!current.has("temperature_2m") 
+					|| !current.has("apparent_temperature")
+					|| !current.has ("precipitation")
+					|| !current.has("weather_code")) {
+				return "Incomplete weather data received.";
+			}
+				
 			double temperature = current.get("temperature_2m").getAsDouble();
 			double apparentTemperature = current.get("apparent_temperature").getAsDouble();
 			double precipitation = current.get("precipitation").getAsDouble();
@@ -40,7 +60,7 @@ public class WeatherQuery {
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return null;
+			return "An error occurred while retrieving weather information.";
 
 		}
 
