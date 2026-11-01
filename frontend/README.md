@@ -1,6 +1,12 @@
 # GeauxTravel frontend
 
-This is the React and TypeScript starting point for the website. The home page introduces GeauxTravel, and the navigation opens a login UI.
+This is the React and TypeScript frontend for GeauxTravel. The home page introduces the app, shows destination ideas, and links to the login screen.
+
+## Home page
+
+The home page uses the cream and purple design with a New Orleans photo. Explore destinations jumps to three places with expandable trip ideas. The ideas are static suggestions; they do not fetch availability or create an itinerary. The trip-preference form and backend connections are separate work.
+
+Photo attribution is shown once at the bottom of the home page and recorded in `src/assets/CREDITS.md`.
 
 ## Run it
 
