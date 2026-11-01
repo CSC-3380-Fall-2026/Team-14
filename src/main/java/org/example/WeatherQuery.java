@@ -9,6 +9,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 import java.util.Locale;
+import java.util.List;
+import java.util.ArrayList;
 
 public class WeatherQuery {
 
@@ -142,7 +144,83 @@ if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 			return "An error occurred while retrieving weather information.";
 				}
 			}
+public static List<DailyForecast> getSevenDayForecastData(double latitude, double longitude) {
+if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 
+			throw new IllegalArgumentException("Invalid coordinates.");
+		}
+
+	try {
+			String url = String.format(
+				Locale.US,
+					"https://api.open-meteo.com/v1/forecast?latitude=%f&longitude=%f"
+				 + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code"
+				 + "&forecast_days=7"
+				 + "&timezone=auto"
+				 + "&temperature_unit=fahrenheit"
+				 + "&precipitation_unit=inch",
+					latitude, longitude);
+
+			URI uri = URI.create(url);
+			HttpClient client = HttpClient.newHttpClient();
+
+			HttpRequest request = HttpRequest.newBuilder().uri(uri).GET().build();
+
+			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+			 if (response.statusCode() != 200) {
+				throw new IllegalStateException("Unable to retrieve weather data.");
+			 }
+
+			 JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
+
+			 if (!root.has("daily") || !root.get("daily").isJsonObject()) {
+				throw new IllegalStateException("Daily forecast data is unavailable.");
+			 }
+
+			 JsonObject daily =  root.getAsJsonObject("daily");
+			 JsonArray dates = daily.getAsJsonArray("time");
+			 JsonArray highTemperatures = daily.getAsJsonArray("temperature_2m_max");
+			 JsonArray lowTemperatures = daily.getAsJsonArray("temperature_2m_min");
+			 JsonArray precipitation = daily.getAsJsonArray("precipitation_sum");
+			 JsonArray weatherCodes = daily.getAsJsonArray("weather_code");
+
+			 if (dates == null || highTemperatures == null || lowTemperatures == null || precipitation == null || weatherCodes == null) {
+				throw new IllegalStateException("Incomplete daily forecast data received.");
+			 }
+
+			 if (dates.size() < 7 || highTemperatures.size() < 7 || lowTemperatures.size() < 7 || precipitation.size() < 7 || weatherCodes.size() < 7) {
+				throw new IllegalStateException ("Incomplete 7-day forecast received.");
+
+			 }
+
+			List<DailyForecast> forecast = new ArrayList<>();
+
+			 for (int i = 0; i < 7; i++) {
+
+				String date = dates.get(i).getAsString();
+				double high = highTemperatures.get(i).getAsDouble();
+				double low = lowTemperatures.get(i).getAsDouble();
+				double rain = precipitation.get(i).getAsDouble();
+				int code = weatherCodes.get(i).getAsInt();
+				String weatherDescription = getWeatherDescription(code);
+
+				DailyForecast day = new DailyForecast(
+					date, high, low, rain, weatherDescription);
+
+					forecast.add(day);
+
+			 }
+
+			 return forecast;
+
+
+				} catch (Exception e) {
+			if (e instanceof IllegalArgumentException) {
+				throw (IllegalArgumentException) e;
+			}
+			throw new IllegalStateException("Unable to retrieve structured forecast data.", e);
+				}
+			}
 			private static String getWeatherDescription(int weatherCode) {
 		switch (weatherCode) {
 
