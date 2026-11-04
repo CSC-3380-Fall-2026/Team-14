@@ -9,7 +9,7 @@ public class Main {
 
     public static void main(String[] args) throws SerpApiException {
         //calls generateFlight with the info from user
-        Map<String, FlightQueury> all_flight_data = generateFlight("MSY", "OGG", "1", "2026-10-21", "2026-10-26");
+        Map<String, FlightQueury> all_flight_data = generateFlight("SFO", "OGG", "1", "2026-10-21", "2026-10-26");
 
     }
 
@@ -34,7 +34,6 @@ public class Main {
         SerpApi client = new SerpApi(auth);
         Map<String, String> params = new HashMap<>();
         params.put("engine", "google_flights");
-        params.put("q", "Baton Rouge to Denver");
         params.put("departure_id", destination_airport);
         params.put("arrival_id", departure_airport);
         params.put("type", type);
@@ -80,15 +79,25 @@ public class Main {
             String airline = nested_nested_firstFlights.has("airline") ? nested_nested_firstFlights.get("airline").getAsString() : "N/A";
             String travel_class = nested_nested_firstFlights.has("travel_class") ? nested_nested_firstFlights.get("travel_class").getAsString() : "N/A";
             String flight_number = nested_nested_firstFlights.has("flight_number") ? nested_nested_firstFlights.get("flight_number").getAsString() : "N/A";
-            Boolean flight_overnight = nested_nested_firstFlights.has("flight_number") ? nested_nested_firstFlights.get("flight_number").getAsBoolean() : false;
-            Integer price = nested_nested_firstFlights.has("price") ? nested_nested_firstFlights.get("price").getAsInt() : 0;
+            Boolean flight_overnight = nested_nested_firstFlights.has("overnight") ? nested_nested_firstFlights.get("overnight").getAsBoolean() : false;
+            Integer price = firstFlight.has("price") ? firstFlight.get("price").getAsInt() : 0;
+
+            Integer layover_duration = 0;
+            String layover_name = "";
+            String layover_id = "";
+            Boolean layover_overnight = false;
+
 
             //This puts us IN the layover array
-            JsonObject layovers = nested_firstFlights.get(1).getAsJsonObject();
-            Integer layover_duration = layovers.has("duration") ? layovers.get("duration").getAsInt() : 0;
-            String layover_name = layovers.has("name") ? layovers.get("name").getAsString() : "N/A";
-            String layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
-            Boolean layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
+            if (!nested_firstFlights.isJsonNull()) {
+                JsonObject layovers = nested_firstFlights.get(1).getAsJsonObject();
+                layover_duration = layovers.has("duration") ? layovers.get("duration").getAsInt() : 0;
+                layover_name = layovers.has("name") ? layovers.get("name").getAsString() : "N/A";
+                layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
+                layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
+            }
+
+
 
             //test - use this to check if the data retrieved is right
             //System.out.println("departure airport "+ leave_airportName + leave_airportCode+ leave_departureTime +
@@ -110,10 +119,14 @@ public class Main {
 
             all_flight_data.put(dynamicReferenceName, temp_flight_data);
         }
-
-        //gets the info for the flights; should make into a for loop when implementing to website
-        FlightQueury flight_data_1 = all_flight_data.get("flight_data_1");
-        System.out.print ("layover name: "+ flight_data_1.layover_name + " price: " + flight_data_1.price);
+        //gets the info for the flights and prints to the terminal
+        for (Map.Entry<String, FlightQueury> entry : all_flight_data.entrySet()) {
+            FlightQueury flight = entry.setValue(entry.getValue());
+            System.out.print ("\n |departure airport name: " + flight.leave_airportName + " | duration: " +
+                    flight.duration + "mins"+ " | arrival airport name: " + flight.arrive_airportName + " | flight layover name: " +
+                    flight.layover_name + " overnight layover?: " + flight.flight_overnight +
+                    " | price: $" + flight.price + "USD" + " | airline: " + flight.airline + "|");
+        }
 
         return all_flight_data;
     }
