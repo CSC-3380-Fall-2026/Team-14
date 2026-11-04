@@ -2,9 +2,17 @@ package org.example;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-
+/**
+ * Tests the DailyForecast class and verifies that the
+ * structured weather forecast rejects invalid coordinates
+ */
 public class DailyForecastTest {
 
+    /**
+     * Verifies that the DailyForecast constructor correctly stores
+     * the date, high and low temperatures, precipitation,
+     * and weather conditions.
+     */
     @Test
     void testDailyForecastValues() {
         DailyForecast day = new DailyForecast(
@@ -20,6 +28,11 @@ public class DailyForecastTest {
 
     }
 
+
+    /**
+     * Verifies that DailyForecast correctly stores zero precipitation
+     * and returns the expected weather condition.
+     */
     @Test
     void testZeroPrecipitation() {
         DailyForecast day = new DailyForecast(
@@ -31,6 +44,10 @@ public class DailyForecastTest {
 
     }
 
+    /**
+     * Verifies that the structured forecast method rejects
+     * latitude values outside the valid range of -90 to 90 degrees.
+     */
     @Test
     void testInvalidLatitude() {
         assertThrows(
@@ -39,6 +56,10 @@ public class DailyForecastTest {
         );
     }
 
+    /**
+     * Verifies that the structured forecast method rejects
+     * longitude values outside the valid range of -180 to 180 degrees.
+     */
     @Test
     void testInvalidLongitude() {
         assertThrows(
