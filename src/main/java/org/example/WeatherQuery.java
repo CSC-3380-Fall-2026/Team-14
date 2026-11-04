@@ -12,9 +12,20 @@ import java.util.Locale;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Retrieves current weather conditions and seven-day forecasts from Open-Meteo.
+ * Supports formatted text output and structured daily forecast objects.
+ */
+
 public class WeatherQuery {
 
-
+/**
+ * Retrieves current weather information for a location as formatted text.
+ * Includes temperature, feels-like temperature, precipitation, and conditions.
+ * @param latitude location latitude in degress (-90 to 90)
+ * @param longitude location longitude in degress (-180 to 180)
+ * @return formatted current weather information, or an error message
+ */
 	public static String getWeatherForecast(double latitude, double longitude) {
 		if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 
@@ -40,7 +51,7 @@ public class WeatherQuery {
 			if (!root.has("current")) {
 				return "Weather data is unavailable for this location.";
 			}
-
+			// Read the current conditions from the API response.
 			JsonObject current = root.getAsJsonObject("current");
 
 			if (!current.has("temperature_2m")
@@ -54,8 +65,8 @@ public class WeatherQuery {
 			double apparentTemperature = current.get("apparent_temperature").getAsDouble();
 			double precipitation = current.get("precipitation").getAsDouble();
 			int weatherCode = current.get("weather_code").getAsInt();
-			
-			String weatherDescription = getWeatherDescription(weatherCode);                                                   	
+
+			String weatherDescription = getWeatherDescription(weatherCode);
 
 			String result = String.format(
 					"Temperature: %.1f°F\nFeels Like: %.1f°F\nPrecipitation: %.2f in\nCondition: %s", temperature,
@@ -69,6 +80,14 @@ public class WeatherQuery {
 		}
 
 	}
+	/**
+ * Retrieves a seven-day forecast and formats each day's weather as text.
+ * Temperatures are in Fahrenheit and precipitation is in inches.
+ *
+ * @param latitude location latitude in degrees (-90 to 90)
+ * @param longitude location longitude in degrees (-180 to 180)
+ * @return formatted seven-day forecast , or an error message
+ */
 public static String getSevenDayForecast(double latitude, double longitude) {
 if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 
@@ -117,7 +136,7 @@ if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 				return "Incomplete 7-day forecast received.";
 
 			 }
-
+			 // Build a readable forecast entry for each of the seven days.
 			 StringBuilder forecast = new StringBuilder();
 
 			 for (int i = 0; i < 7; i++) {
@@ -144,6 +163,17 @@ if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 			return "An error occurred while retrieving weather information.";
 				}
 			}
+/**
+ * Retrieves a seven-day forecast as a list of DailyForecast objects.
+ * Each object stores the date, high and low temperatures, precipitation,
+ * and a readable weather condition
+ *
+ * @param latitude location latitude in degrees (-90 to 90)
+ * @param longitude location longitude in degrees (-180 to 180)
+ * @return a list containing seven daily forecast objects
+ * @throws IllegalArgumentException if coordinates are outside valid ranges
+ * @throws IllegalStateException if the request or forecast processing fails
+ */
 public static List<DailyForecast> getSevenDayForecastData(double latitude, double longitude) {
 if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 
@@ -192,7 +222,7 @@ if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 				throw new IllegalStateException ("Incomplete 7-day forecast received.");
 
 			 }
-
+			 // Store each day as a separate object for use by other code.
 			List<DailyForecast> forecast = new ArrayList<>();
 
 			 for (int i = 0; i < 7; i++) {
@@ -221,6 +251,12 @@ if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
 			throw new IllegalStateException("Unable to retrieve structured forecast data.", e);
 				}
 			}
+			/**
+			 * Converts an Open-Meteo weather code into a readable condition.
+			 *
+			 * @param weatherCode numerical weather condition code from Open-Meteo
+			 * @return a condition description, or a fallback for unknown codes
+			 */
 			private static String getWeatherDescription(int weatherCode) {
 		switch (weatherCode) {
 
