@@ -347,3 +347,20 @@ main:focus {
   outline: 3px solid #78548f;
   outline-offset: 4px;
 }
+
+.trip-preferences .trip-destination h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.trip-preferences .trip-destination a {
+  display: inline-block;
+  padding: 8px 0;
+  color: #5d4272;
+  text-underline-offset: 4px;
+}
+
+.trip-preferences .trip-draft-notice {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}

@@ -40,8 +40,16 @@ The home page includes the Mapbox map from Mackenzie's map feature. The
 map supports pan, zoom, rotation, and keyboard controls. If the map cannot
 load, the page shows a message and still links to trip preferences.
 
-Plan a trip opens `#/preferences`. The form keeps its choices while you
-stay on that page. It does not save them or generate an itinerary yet.
+Click the map to place a destination pin. Keyboard users can move the map
+with the arrow keys and choose Use map center. Plan a trip here carries
+the selected latitude and longitude into `#/preferences`; location names
+and address search are not connected.
+
+The destination and form fields stay in the draft while moving between
+home, preferences, and login. Reloading the page clears the draft. Nothing
+is saved to an account or sent to the Java backend, and the form does not
+generate an itinerary yet. Clear destination removes only the pin and
+coordinates, leaving the other fields intact.
 `#/map` opens home for links made before the map moved to the homepage.
 
 Mapbox is installed in `frontend`, with the rest of the app dependencies.

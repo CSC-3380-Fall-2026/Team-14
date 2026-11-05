@@ -1,15 +1,23 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import HomePage from './components/HomePage'
 import LoginPage from './components/LoginPage'
 import SiteNavigation from './components/SiteNavigation'
 import { resolvePage } from './navigation'
 import './App.css'
 import TripPreferences from './TripPreferences'
+import { createTripDraft, tripDraftReducer, type Destination, type TripPreferencesData } from './tripDraft'
 
 function App() {
   const [page, setPage] = useState(() => resolvePage(window.location.hash))
+  const [draft, dispatch] = useReducer(tripDraftReducer, undefined, createTripDraft)
   const mainContent = useRef<HTMLElement>(null)
   const previousPage = useRef(page)
+  const changeDestination = useCallback((destination: Destination | null) => {
+    dispatch({ type: 'destinationSelected', destination })
+  }, [])
+  const changePreferences = useCallback((changes: Partial<TripPreferencesData>) => {
+    dispatch({ type: 'preferencesChanged', changes })
+  }, [])
 
   useEffect(() => {
     function handleHashChange() {
@@ -29,6 +37,7 @@ function App() {
 
     if (previousPage.current !== page) {
       mainContent.current?.focus()
+      mainContent.current?.scrollIntoView({ block: 'start' })
       previousPage.current = page
     }
   }, [page])
@@ -62,10 +71,10 @@ function App() {
           <section aria-labelledby="page-title">
             <h1 id="page-title">Plan your trip</h1>
             <p className="preferences-intro">Choose your dates, budget, and interests.</p>
-            <TripPreferences />
+            <TripPreferences draft={draft} onPreferencesChange={changePreferences} />
             <a className="return-home" href="#/">Back to the map</a>
           </section>
-        ) : <HomePage />}
+        ) : <HomePage destination={draft.destination} onDestinationChange={changeDestination} />}
       </main>
     </div>
   )

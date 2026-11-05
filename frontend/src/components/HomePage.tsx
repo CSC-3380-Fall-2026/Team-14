@@ -1,9 +1,15 @@
 import { lazy, Suspense } from 'react'
 import './HomePage.css'
+import type { Destination } from '../tripDraft'
 
 const MapPage = lazy(() => import('./MapPage'))
 
-export default function HomePage() {
+type HomePageProps = {
+  destination: Destination | null
+  onDestinationChange: (destination: Destination | null) => void
+}
+
+export default function HomePage({ destination, onDestinationChange }: HomePageProps) {
   return (
     <>
       <section className="home-intro" aria-labelledby="page-title">
@@ -19,7 +25,7 @@ export default function HomePage() {
         </div>
         <div className="home-map">
           <Suspense fallback={<p role="status">Loading the map…</p>}>
-            <MapPage />
+            <MapPage destination={destination} onDestinationChange={onDestinationChange} />
           </Suspense>
         </div>
       </section>
