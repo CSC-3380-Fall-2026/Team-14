@@ -21,7 +21,11 @@ function App() {
   }, [])
 
   useEffect(() => {
-    document.title = page === 'login' ? 'Log in | GeauxTravel' : 'GeauxTravel'
+    document.title = {
+      home: 'GeauxTravel',
+      login: 'Log in | GeauxTravel',
+      preferences: 'Trip preferences | GeauxTravel',
+    }[page]
 
     if (previousPage.current !== page) {
       mainContent.current?.focus()
@@ -50,11 +54,18 @@ function App() {
       <main
         ref={mainContent}
         id="main-content"
-        className={page === 'login' ? 'login' : 'home'}
+        className={page}
         tabIndex={-1}
         aria-labelledby="page-title"
       >
-        {page === 'login' ? <LoginPage /> : <HomePage />}
+        {page === 'login' ? <LoginPage /> : page === 'preferences' ? (
+          <section aria-labelledby="page-title">
+            <h1 id="page-title">Plan your trip</h1>
+            <p className="preferences-intro">Choose your dates, budget, and interests.</p>
+            <TripPreferences />
+            <a className="return-home" href="#/">Back to the map</a>
+          </section>
+        ) : <HomePage />}
       </main>
     </div>
   )

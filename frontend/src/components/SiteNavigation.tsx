@@ -44,6 +44,13 @@ export default function SiteNavigation({ page, onCurrentPageNavigate }: SiteNavi
           Home
         </a>
         <a
+          href="#/preferences"
+          aria-current={page === 'preferences' ? 'page' : undefined}
+          onClick={(event) => handleNavigation(event, 'preferences')}
+        >
+          Plan a trip
+        </a>
+        <a
           href="#/login"
           aria-current={page === 'login' ? 'page' : undefined}
           onClick={(event) => handleNavigation(event, 'login')}

@@ -14,6 +14,7 @@ function TripPreferences() {
 
     const [pace, setPace] = useState('Standard')
     const [notes, setNotes] = useState('')
+    const [planningRequested, setPlanningRequested] = useState(false)
 
 function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
     const interest = event.target.value
@@ -34,7 +35,7 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
     const formIsValid = datesAreValid && budgetIsValid && travelersAreValid
 
     return (
-    <div>
+    <div className="trip-preferences">
 {/* Start and End dates*/}
     <div>    
         <label htmlFor="startDate">Start date</label>
@@ -78,7 +79,9 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
         value={budget}
         onChange={(event) => setBudget(event.target.value)}
       />
+      <label htmlFor="currency">Currency</label>
       <select
+        id="currency"
         value={currency}
         onChange={(event) => setCurrency(event.target.value)}
       >   
@@ -138,7 +141,9 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
 </p>
 
 {/*Daily pace and Notes*/}
-<div>
+<fieldset>
+  <legend>Daily pace</legend>
+  <label>
   <input
   type="radio"
   name="pace"
@@ -147,6 +152,8 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
   onChange={(event) => setPace(event.target.value)}
   />
   Relaxed
+  </label>
+  <label>
   <input
   type="radio"
   name="pace"
@@ -155,6 +162,8 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
   onChange={(event) => setPace(event.target.value)}
   />
   Standard
+  </label>
+  <label>
   <input
   type="radio"
   name="pace"
@@ -163,7 +172,8 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
   onChange={(event) => setPace(event.target.value)}
   />
   Active
-</div>
+  </label>
+</fieldset>
 
 <div className="notes-field">
   <label htmlFor="notes">
@@ -172,7 +182,7 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
 
   <textarea
     id="notes"
-    rows="3"
+    rows={3}
     placeholder="For example: vegetarian food or time to rest"
     value={notes}
     onChange={(event) => setNotes(event.target.value)}
@@ -182,9 +192,12 @@ function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
 <p>Daily pace: {pace}</p>
 <p>Notes: {notes || 'No notes added'}</p>
 
-    <button disabled={!formIsValid}>
+    <button type="button" disabled={!formIsValid} onClick={() => setPlanningRequested(true)}>
     Generate itinerary
     </button>
+    {planningRequested && (
+      <p role="status">Itinerary planning is not available yet. Your choices remain on this page.</p>
+    )}
 
     </div>
 

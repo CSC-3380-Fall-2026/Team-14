@@ -260,3 +260,90 @@ main:focus {
   flex-direction: column;
   gap: 8px;
 }
+
+.preferences {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.preferences h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.preferences-intro {
+  margin: 0 0 28px;
+  color: #514956;
+}
+
+.trip-preferences {
+  display: grid;
+  gap: 20px;
+}
+
+.trip-preferences > div,
+.trip-preferences fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid #d8cddd;
+  border-radius: 8px;
+  background: #fffdf9;
+}
+
+.trip-preferences label {
+  display: block;
+  margin: 8px 0;
+  font-weight: 600;
+}
+
+.trip-preferences input:not([type='checkbox']):not([type='radio']),
+.trip-preferences select,
+.trip-preferences textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid #a99caf;
+  border-radius: 6px;
+  background: #fff;
+  color: #29232e;
+  font: inherit;
+}
+
+.trip-preferences input[type='checkbox'],
+.trip-preferences input[type='radio'] {
+  margin-right: 10px;
+}
+
+.trip-preferences p {
+  color: #514956;
+  line-height: 1.6;
+}
+
+.trip-preferences [role='alert'] {
+  color: #962635;
+}
+
+.trip-preferences > button {
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid #5d4272;
+  border-radius: 6px;
+  background: #5d4272;
+  color: #fff;
+  font-weight: 600;
+}
+
+.trip-preferences > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.trip-preferences select:focus-visible,
+.trip-preferences textarea:focus-visible {
+  outline: 3px solid #78548f;
+  outline-offset: 4px;
+}
