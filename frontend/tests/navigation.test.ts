@@ -20,3 +20,13 @@ for (const hash of ['#/trips', '#/login-extra', '#/login/profile']) {
     assert.equal(resolvePage(hash), 'home')
   })
 }
+
+// The merged trip form must be reachable from a direct link.
+test('opens trip preferences for its direct hash URL', () => {
+  assert.equal(resolvePage('#/preferences'), 'preferences')
+})
+
+// Older map links should land on the map now shown on the homepage.
+test('keeps existing map links on the home view', () => {
+  assert.equal(resolvePage('#/map'), 'home')
+})

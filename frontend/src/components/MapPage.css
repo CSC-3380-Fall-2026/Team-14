@@ -1,0 +1,102 @@
+.destination-map {
+  margin-top: 48px;
+  scroll-margin-top: 24px;
+}
+
+.destination-map-heading h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.5rem, 3vw, 1.8rem);
+}
+
+.destination-map-heading p {
+  max-width: 760px;
+  margin: 0 0 20px;
+  color: #514956;
+  line-height: 1.6;
+}
+
+.destination-map-frame {
+  position: relative;
+  width: 100%;
+  height: clamp(360px, 55vw, 540px);
+  overflow: hidden;
+  border: 1px solid #b3a2bd;
+  border-radius: 12px;
+  background: #f0e9f2;
+}
+
+.destination-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.destination-map-overlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f0e9f2;
+}
+
+.destination-map-message {
+  max-width: 460px;
+  padding: 24px;
+  border: 1px solid #d8cddd;
+  border-radius: 8px;
+  background: #fffdf9;
+  text-align: center;
+}
+
+.destination-map-message h3 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.destination-map-message p {
+  margin: 0;
+  color: #514956;
+  line-height: 1.6;
+}
+
+.destination-map-retry {
+  min-height: 44px;
+  margin-top: 20px;
+  padding: 10px 18px;
+  border: 1px solid #5d4272;
+  border-radius: 6px;
+  background: #5d4272;
+  color: #fff;
+  font-weight: 600;
+}
+
+.destination-map-retry:hover {
+  background: #4b335e;
+}
+
+.destination-map .mapboxgl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+}
+
+.destination-map .mapboxgl-ctrl button:focus-visible,
+.destination-map .mapboxgl-canvas:focus-visible {
+  outline: 3px solid #78548f;
+  outline-offset: -3px;
+}
+
+@media (max-width: 600px) {
+  .destination-map {
+    margin-top: 32px;
+  }
+
+  .destination-map-frame {
+    height: 400px;
+  }
+
+  .destination-map-overlay,
+  .destination-map-message {
+    padding: 20px;
+  }
+}

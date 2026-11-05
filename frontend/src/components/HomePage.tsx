@@ -1,5 +1,7 @@
-import newOrleansPhoto from '../assets/new-orleans.jpg'
+import { lazy, Suspense } from 'react'
 import './HomePage.css'
+
+const MapPage = lazy(() => import('./MapPage'))
 
 export default function HomePage() {
   return (
@@ -11,18 +13,15 @@ export default function HomePage() {
             Choose a destination and plan around your dates, budget, and
             interests. GeauxTravel starts with what you want to do.
           </p>
-          <a className="explore-link" href="#destinations">Explore destinations</a>
+          <a className="explore-link" href="#/preferences">Plan a trip</a>
+          <a className="home-login-link" href="#destinations">Explore destination ideas</a>
           <a className="home-login-link" href="#/login">Log in to your account</a>
         </div>
-        <figure className="home-photo">
-          <img
-            src={newOrleansPhoto}
-            alt="Colorful buildings and balconies in the French Quarter of New Orleans"
-            width="1280"
-            height="960"
-          />
-          <figcaption>New Orleans, Louisiana</figcaption>
-        </figure>
+        <div className="home-map">
+          <Suspense fallback={<p role="status">Loading the map…</p>}>
+            <MapPage />
+          </Suspense>
+        </div>
       </section>
 
       <section className="destinations" id="destinations" aria-labelledby="destinations-title">
@@ -56,10 +55,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <p className="home-photo-credit">
-        Photo: <a href="https://commons.wikimedia.org/wiki/File:French_Quarter02_New_Orleans.jpg">Sami99tr</a>
-        {' · '}<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>
-      </p>
     </>
   )
 }

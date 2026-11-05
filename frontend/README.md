@@ -1,12 +1,10 @@
 # GeauxTravel frontend
 
-This is the React and TypeScript frontend for GeauxTravel. The home page introduces the app, shows destination ideas, and links to the login screen.
+This is the React and TypeScript frontend for GeauxTravel. The home page shows an interactive map and destination ideas, with links to trip preferences and login.
 
 ## Home page
 
-The home page uses the cream and purple design with a New Orleans photo. Explore destinations jumps to three places with expandable trip ideas. The ideas are static suggestions; they do not fetch availability or create an itinerary. The trip-preference form and backend connections are separate work.
-
-Photo attribution is shown once at the bottom of the home page and recorded in `src/assets/CREDITS.md`.
+The home page uses the cream and purple design with a map. Explore destination ideas jumps to three places with expandable suggestions. The ideas are static; they do not fetch availability or create an itinerary. Plan a trip opens the trip-preference form. Backend connections are still separate work.
 
 ## Run it
 
@@ -18,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Open the local address printed by Vite. Home uses `#/` and login uses `#/login`, so the login view can be opened directly or reloaded without a server rewrite. Browser Back and Forward switch between the views. Unknown hashes show home.
+Open the local address printed by Vite. Home uses `#/`, login uses `#/login`, and trip preferences use `#/preferences`. Each view can be opened directly or reloaded without a server rewrite. Browser Back and Forward switch between the views. Unknown hashes show home.
 
 ## Check it
 
@@ -35,3 +33,18 @@ The dependency-free tests cover hash resolution and local login field validation
 Account sign-in is not connected to an authentication service. Submitting checks required fields and a basic email format locally, then explains that the user is still signed out. The app does not send or persist the entered email or password. It does not create an account or authenticate a user. Password validation only checks for a nonblank value; an account password policy is not defined here.
 
 The Java work is still in the repository root and is separate from this frontend folder.
+
+## Map and trip preferences
+
+The home page includes the Mapbox map from Mackenzie's map feature. The
+map supports pan, zoom, rotation, and keyboard controls. If the map cannot
+load, the page shows a message and still links to trip preferences.
+
+Plan a trip opens `#/preferences`. The form keeps its choices while you
+stay on that page. It does not save them or generate an itinerary yet.
+`#/map` opens home for links made before the map moved to the homepage.
+
+Mapbox is installed in `frontend`, with the rest of the app dependencies.
+The existing public browser token is used by default. Set
+`VITE_MAPBOX_TOKEN` in `frontend/.env.local` to use a different public
+Mapbox token. Never put a secret token in a `VITE_` variable.
