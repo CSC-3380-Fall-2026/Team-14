@@ -4,6 +4,7 @@ import LoginPage from './components/LoginPage'
 import SiteNavigation from './components/SiteNavigation'
 import { resolvePage } from './navigation'
 import './App.css'
+import TripPreferences from './TripPreferences'
 
 function App() {
   const [page, setPage] = useState(() => resolvePage(window.location.hash))
