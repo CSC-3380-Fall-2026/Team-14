@@ -22,6 +22,7 @@ export default function HomePage({ destination, onDestinationChange }: HomePageP
           <a className="explore-link" href="#/preferences">Plan a trip</a>
           <a className="home-login-link" href="#destinations">Explore destination ideas</a>
           <a className="home-login-link" href="#/login">Log in to your account</a>
+          <p className="home-account-prompt">New here? <a href="#/signup">Create an account</a> or plan a trip as a guest.</p>
         </div>
         <div className="home-map">
           <Suspense fallback={<p role="status">Loading the map…</p>}>

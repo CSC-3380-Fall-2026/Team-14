@@ -1,3 +1,6 @@
+import { getTripDates } from './calendar.ts'
+import { parseMoney } from './money.ts'
+
 export type Destination = { latitude: number; longitude: number }
 
 export type TripPreferencesData = {
@@ -40,8 +43,13 @@ export function tripDraftReducer(draft: TripDraft, action: TripDraftAction): Tri
 }
 
 export function isTripDraftValid(draft: TripDraft): boolean {
+  try { getTripDates(draft.startDate, draft.endDate) } catch { return false }
   return draft.destination !== null && normalizeDestination(draft.destination) !== null
-    && draft.startDate !== '' && draft.endDate !== '' && draft.endDate >= draft.startDate
-    && Number.isFinite(Number(draft.budget)) && Number(draft.budget) > 0
-    && Number.isInteger(Number(draft.travelers)) && Number(draft.travelers) >= 1
+    && parseMoney(draft.budget) !== null
+    && /^\d+$/.test(draft.travelers) && Number.isSafeInteger(Number(draft.travelers)) && Number(draft.travelers) >= 1
+    && ['USD', 'EUR'].includes(draft.currency)
+    && ['Relaxed', 'Standard', 'Active'].includes(draft.pace)
+    && draft.interests.length <= 4 && new Set(draft.interests).size === draft.interests.length
+    && draft.interests.every(interest => ['Food', 'Art', 'Outdoors', 'History'].includes(interest))
+    && draft.notes.length <= 2000
 }
