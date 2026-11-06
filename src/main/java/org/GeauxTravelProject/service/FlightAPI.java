@@ -1,4 +1,4 @@
-package org.example;
+package org.GeauxTravelProject.service;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -7,6 +7,9 @@ import serpapi.SerpApiException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
+    @Service
     public class FlightAPI {
         /**
          * Generates about 3-4 separate flight info using the given parameters. It loops through all the different flight
@@ -15,9 +18,8 @@ import java.util.Map;
          *
          * @param destination_airport, departure_airport, type, outbound_date, return_date
          * @return all_flight_data
-         * @throwsSerpApiException
          */
-        public static Map<String, FlightQueury> generateFlight(String destination_airport, String departure_airport, String type, String outbound_date, String return_date) throws SerpApiException {
+        public static Map<String, FlightQueury> generateFlight(String destination_airport, String departure_airport, String type, String outbound_date, String return_date)  {
             destination_airport = destination_airport.toUpperCase();
             departure_airport = departure_airport.toUpperCase();
 
@@ -34,7 +36,12 @@ import java.util.Map;
             params.put("type", type);
             params.put("outbound_date", outbound_date);
             params.put("return_date", return_date);
-            JsonObject data = client.search(params);
+            JsonObject data = null;
+            try {
+                data = client.search(params);
+            } catch (SerpApiException e) {
+                throw new RuntimeException(e);
+            }
 
 
             JsonArray bestFlights = data.getAsJsonArray("best_flights");
@@ -125,5 +132,17 @@ import java.util.Map;
 
             return all_flight_data;
         }
+
+        public static Map<String, FlightQueury> findNearestAirport(double latitude, double longitude) {
+            //based off of the lat and long it is going to find the nearest airport
+            //then it will call 'generateFlight' using that info
+            //AlSO need to create a box where the user inputs their home airport
+
+            //get from the lat and long
+            String destination_airport = "N/A";
+
+            return generateFlight(destination_airport, "OGG", "1", "2026-10-21", "2026-10-26");
+        }
+
     }
 

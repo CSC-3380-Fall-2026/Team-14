@@ -1,4 +1,4 @@
-package org.example;
+package org.GeauxTravelProject.service;
 
 public class MapAPI {
     //the logic behind the 3d global map or only united states

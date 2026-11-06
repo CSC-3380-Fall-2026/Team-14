@@ -1,4 +1,4 @@
-package org.example;
+package org.GeauxTravelProject.service;
 
 public class FlightQueury {
     public String leave_airportName;
