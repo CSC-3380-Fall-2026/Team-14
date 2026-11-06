@@ -40,10 +40,20 @@ The home page includes the Mapbox map from Mackenzie's map feature. The
 map supports pan, zoom, rotation, and keyboard controls. If the map cannot
 load, the page shows a message and still links to trip preferences.
 
-Click the map to place a destination pin. Keyboard users can move the map
-with the arrow keys and choose Use map center. Plan a trip here carries
-the selected latitude and longitude into `#/preferences`; location names
-and address search are not connected.
+Search for a city, region, or address, then choose a result to place the
+destination pin. You can also click the map or drag the pin, including
+after a search. Keyboard users can search and choose a result, or move
+the map with the arrow keys and choose Use map center. Plan a trip here
+confirms the latest selected latitude and longitude in `#/preferences`.
+
+Search uses Mapbox Geocoding v6 only when the form is submitted, with up
+to five results. Requests use `permanent=true` because saved example trips
+can retain selected coordinates. The Mapbox account must support permanent
+geocoding; this code does not change account or billing settings. Token,
+account, connection, and rate-limit errors are shown while manual map
+selection stays available. Edits and navigation cancel obsolete searches;
+a search times out after 12 seconds. Search results are not added to the
+trip until the user chooses one. No geocoder package is added.
 
 The destination and form fields stay in the draft while moving between
 pages. Reloading the page clears that unsaved draft. The example itinerary

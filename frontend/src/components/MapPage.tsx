@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import mapboxgl, { type Map as MapboxMap, type MapMouseEvent } from 'mapbox-gl'
+import mapboxgl, { type Map as MapboxMap, type MapMouseEvent, type Marker } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './MapPage.css'
 import type { Destination } from '../tripDraft'
+import DestinationSearch from './DestinationSearch'
 
 type MapStatus = 'loading' | 'ready' | 'error' | 'unsupported'
 
@@ -16,6 +17,8 @@ type MapPageProps = {
 export default function MapPage({ destination, onDestinationChange }: MapPageProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MapboxMap | null>(null)
+  const markerRef = useRef<Marker | null>(null)
+  const token = import.meta.env.VITE_MAPBOX_TOKEN?.trim() || fallbackToken
   const [status, setStatus] = useState<MapStatus>('loading')
   const [attempt, setAttempt] = useState(0)
 
@@ -47,7 +50,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
         }
 
         map = new mapboxgl.Map({
-          accessToken: import.meta.env.VITE_MAPBOX_TOKEN?.trim() || fallbackToken,
+          accessToken: token,
           container,
           style: 'mapbox://styles/mapbox/streets-v12',
           center: [-74.5, 40],
@@ -81,20 +84,36 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
       window.clearTimeout(loadingTimeout)
       map?.off('error', showError)
       map?.off('click', selectDestination)
+      markerRef.current?.remove()
+      markerRef.current = null
       map?.remove()
       if (mapRef.current === map) mapRef.current = null
     }
-  }, [attempt, onDestinationChange])
+  }, [attempt, onDestinationChange, token])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || status !== 'ready' || !destination) return
+    if (!map || status !== 'ready') return
+    if (!destination) {
+      markerRef.current?.remove()
+      markerRef.current = null
+      return
+    }
     const coordinates: [number, number] = [destination.longitude, destination.latitude]
-    const marker = new mapboxgl.Marker({ color: '#5d4272' }).setLngLat(coordinates).addTo(map)
-    marker.getElement().setAttribute('aria-hidden', 'true')
-    map.jumpTo({ center: coordinates })
-    return () => { marker.remove() }
-  }, [destination, status, attempt])
+    if (!markerRef.current) {
+      const marker = new mapboxgl.Marker({ color: '#5d4272', draggable: true })
+        .setLngLat(coordinates).addTo(map)
+      marker.getElement().setAttribute('aria-hidden', 'true')
+      marker.on('dragend', () => {
+        const point = marker.getLngLat()
+        onDestinationChange({ latitude: point.lat, longitude: point.lng })
+      })
+      markerRef.current = marker
+      map.jumpTo({ center: coordinates })
+    } else {
+      markerRef.current.setLngLat(coordinates)
+    }
+  }, [destination, status, attempt, onDestinationChange])
 
   const unavailable = status === 'error' || status === 'unsupported'
 
@@ -103,12 +122,21 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
       <div className="destination-map-heading">
         <h2 id="destination-map-title">Explore the map</h2>
         <p id="destination-map-instructions">
-          Click a spot to choose your destination. Drag to explore or use the
-          zoom controls. With the map focused, use the arrow keys to move and
+          Search for a destination, click the map, or drag the pin to adjust
+          your spot. Choose Plan a trip here when you are ready.
+          With the map focused, use the arrow keys to move and
           + or − to zoom, then choose Use map center. On a touchscreen, use
           two fingers to move the map and tap to choose a spot.
         </p>
       </div>
+
+      <DestinationSearch
+        key={attempt} token={token} disabled={status !== 'ready'}
+        onSelect={point => {
+          onDestinationChange(point)
+          mapRef.current?.jumpTo({ center: [point.longitude, point.latitude], zoom: 11 })
+        }}
+      />
 
       <div className="destination-map-frame" aria-busy={status === 'loading'}>
         <div
@@ -171,7 +199,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
           </button>
           {destination && (
             <>
-              <a href="#/preferences">Plan a trip here</a>
+              <a id="destination-map-confirm" href="#/preferences">Plan a trip here</a>
               <button type="button" onClick={() => onDestinationChange(null)}>Clear destination</button>
             </>
           )}
