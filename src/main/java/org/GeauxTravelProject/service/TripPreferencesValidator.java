@@ -1,4 +1,4 @@
-package org.example;
+package org.GeauxTravelProject.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

@@ -1,5 +1,7 @@
-package org.example;
+package org.GeauxTravelProject;
 
+import org.GeauxTravelProject.service.DailyForecast;
+import org.GeauxTravelProject.service.WeatherQuery;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
