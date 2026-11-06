@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import mapboxgl, { type Map as MapboxMap } from 'mapbox-gl'
+import mapboxgl, { type Map as MapboxMap, type MapMouseEvent } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './MapPage.css'
+import type { Destination } from '../tripDraft'
 
 type MapStatus = 'loading' | 'ready' | 'error' | 'unsupported'
 
 const fallbackToken = 'pk.eyJ1IjoiY29vbHByaW5jZXNzcGluazM0NSIsImEiOiJjbXZ2ZTkycHIwMHdtMnlvaTd1ZmsydmJqIn0.GEWiIErAiP3ZcAm7RLK4Uw'
 
-export default function MapPage() {
+type MapPageProps = {
+  destination: Destination | null
+  onDestinationChange: (destination: Destination | null) => void
+}
+
+export default function MapPage({ destination, onDestinationChange }: MapPageProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MapboxMap | null>(null)
   const [status, setStatus] = useState<MapStatus>('loading')
@@ -26,6 +32,9 @@ export default function MapPage() {
       if (initialized) return
       if (active) setStatus('error')
       window.clearTimeout(loadingTimeout)
+    }
+    const selectDestination = (event: MapMouseEvent) => {
+      if (active) onDestinationChange({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })
     }
 
     const initializationFrame = window.requestAnimationFrame(() => {
@@ -50,9 +59,11 @@ export default function MapPage() {
 
         map.getCanvas().setAttribute('aria-label', 'Interactive destination map')
         map.getCanvas().setAttribute('aria-describedby', 'destination-map-instructions')
+        map.getCanvas().style.cursor = 'crosshair'
         map.addControl(new mapboxgl.NavigationControl(), 'top-right')
 
         map.on('error', showError)
+        map.on('click', selectDestination)
         map.once('load', () => {
           initialized = true
           window.clearTimeout(loadingTimeout)
@@ -69,10 +80,21 @@ export default function MapPage() {
       window.cancelAnimationFrame(initializationFrame)
       window.clearTimeout(loadingTimeout)
       map?.off('error', showError)
+      map?.off('click', selectDestination)
       map?.remove()
       if (mapRef.current === map) mapRef.current = null
     }
-  }, [attempt])
+  }, [attempt, onDestinationChange])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || status !== 'ready' || !destination) return
+    const coordinates: [number, number] = [destination.longitude, destination.latitude]
+    const marker = new mapboxgl.Marker({ color: '#5d4272' }).setLngLat(coordinates).addTo(map)
+    marker.getElement().setAttribute('aria-hidden', 'true')
+    map.jumpTo({ center: coordinates })
+    return () => { marker.remove() }
+  }, [destination, status, attempt])
 
   const unavailable = status === 'error' || status === 'unsupported'
 
@@ -81,9 +103,10 @@ export default function MapPage() {
       <div className="destination-map-heading">
         <h2 id="destination-map-title">Explore the map</h2>
         <p id="destination-map-instructions">
-          Drag to explore or use the zoom controls. With the map focused, use
-          the arrow keys to move and + or − to zoom. On a touchscreen, use two
-          fingers to move the map.
+          Click a spot to choose your destination. Drag to explore or use the
+          zoom controls. With the map focused, use the arrow keys to move and
+          + or − to zoom, then choose Use map center. On a touchscreen, use
+          two fingers to move the map and tap to choose a spot.
         </p>
       </div>
 
@@ -128,6 +151,31 @@ export default function MapPage() {
             </div>
           </div>
         )}
+      </div>
+      <div className="destination-map-selection">
+        <p role="status">
+          {destination ? (
+            <>Selected destination: latitude {destination.latitude.toFixed(5)}, longitude {destination.longitude.toFixed(5)}.</>
+          ) : 'Choose a spot on the map to start planning.'}
+        </p>
+        <div className="destination-map-actions">
+          <button
+            type="button"
+            disabled={status !== 'ready'}
+            onClick={() => {
+              const center = mapRef.current?.getCenter()
+              if (center) onDestinationChange({ latitude: center.lat, longitude: center.lng })
+            }}
+          >
+            Use map center
+          </button>
+          {destination && (
+            <>
+              <a href="#/preferences">Plan a trip here</a>
+              <button type="button" onClick={() => onDestinationChange(null)}>Clear destination</button>
+            </>
+          )}
+        </div>
       </div>
     </section>
   )
