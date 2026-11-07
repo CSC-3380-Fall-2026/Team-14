@@ -15,7 +15,7 @@ test('opens login for its direct hash URL', () => {
 })
 
 // Catches unknown hashes accidentally selecting login or an unavailable view.
-for (const hash of ['#/trips', '#/login-extra', '#/login/profile']) {
+for (const hash of ['#/unknown', '#/login-extra', '#/login/profile']) {
   test(`falls back to home for unknown hash ${hash}`, () => {
     assert.equal(resolvePage(hash), 'home')
   })
@@ -30,3 +30,9 @@ test('opens trip preferences for its direct hash URL', () => {
 test('keeps existing map links on the home view', () => {
   assert.equal(resolvePage('#/map'), 'home')
 })
+
+for (const page of ['signup', 'trips', 'itinerary', 'review', 'flights'] as const) {
+  test(`opens ${page} from its direct link`, () => {
+    assert.equal(resolvePage(`#/${page}`), page)
+  })
+}

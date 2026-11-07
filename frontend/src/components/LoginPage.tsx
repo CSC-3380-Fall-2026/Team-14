@@ -105,6 +105,7 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+      <p>New to GeauxTravel? <a href="#/signup">Create an account</a></p>
       <a className="return-home" href="#/">Back to home</a>
     </>
   )

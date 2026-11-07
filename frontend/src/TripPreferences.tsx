@@ -1,17 +1,19 @@
-import { useState } from 'react'
 import { isTripDraftValid, type TripDraft, type TripPreferencesData } from './tripDraft'
+import { getTripDates } from './calendar'
+import { parseMoney } from './money'
 import './App.css'
 
 type TripPreferencesProps = {
   draft: TripDraft
   onPreferencesChange: (changes: Partial<TripPreferencesData>) => void
+  onPreview: () => void
+  planningError: string
 }
 
-function TripPreferences({ draft, onPreferencesChange }: TripPreferencesProps) {
+function TripPreferences({ draft, onPreferencesChange, onPreview, planningError }: TripPreferencesProps) {
   const {
     destination, startDate, endDate, budget, travelers, currency, interests, pace, notes,
   } = draft
-  const [planningRequested, setPlanningRequested] = useState(false)
 
   function handleInterestChange(event: React.ChangeEvent<HTMLInputElement>) {
     const interest = event.target.value
@@ -22,8 +24,14 @@ function TripPreferences({ draft, onPreferencesChange }: TripPreferencesProps) {
     })
   }
 
-  const budgetIsValid = Number.isFinite(Number(budget)) && Number(budget) > 0
-  const travelersAreValid = Number(travelers) >= 1 && Number.isInteger(Number(travelers))
+  const budgetIsValid = parseMoney(budget) !== null
+  const travelersAreValid = /^\d+$/.test(travelers) && Number(travelers) >= 1 && Number.isSafeInteger(Number(travelers))
+  let dateError = ''
+  if (startDate && endDate) {
+    try { getTripDates(startDate, endDate) } catch (error) {
+      dateError = error instanceof Error ? error.message : 'Check your travel dates.'
+    }
+  }
 
   return (
     <div className="trip-preferences">
@@ -67,9 +75,8 @@ function TripPreferences({ draft, onPreferencesChange }: TripPreferencesProps) {
 
         <p>Start date: {startDate}</p>
         <p>End date: {endDate}</p>
-        {startDate && endDate && endDate < startDate && (
-          <p role="alert">End date cannot be before start date.</p>
-        )}
+        <p>Example plans can cover up to 31 days.</p>
+        {dateError && <p role="alert">{dateError}</p>}
       </div>
 
       <div>
@@ -96,7 +103,7 @@ function TripPreferences({ draft, onPreferencesChange }: TripPreferencesProps) {
         </select>
         <p>Budget per traveler: {budget} {currency}</p>
         {budget && !budgetIsValid && (
-          <p role="alert">Budget must be greater than 0</p>
+          <p role="alert">Enter a positive budget with up to two decimal places.</p>
         )}
       </div>
 
@@ -153,6 +160,7 @@ function TripPreferences({ draft, onPreferencesChange }: TripPreferencesProps) {
         <textarea
           id="notes"
           rows={3}
+          maxLength={2000}
           placeholder="For example: vegetarian food or time to rest"
           value={notes}
           onChange={(event) => onPreferencesChange({ notes: event.target.value })}
@@ -165,13 +173,12 @@ function TripPreferences({ draft, onPreferencesChange }: TripPreferencesProps) {
       <button
         type="button"
         disabled={!isTripDraftValid(draft)}
-        onClick={() => setPlanningRequested(true)}
+        onClick={onPreview}
       >
-        Generate itinerary
+        Preview example itinerary
       </button>
-      {planningRequested && (
-        <p role="status">Itinerary planning is not available yet. Your draft stays while you move between pages.</p>
-      )}
+      <p>Choose a destination, valid dates, a budget, and a traveler count to preview a plan. The example uses general activity ideas, not live venue results or verified prices.</p>
+      {planningError && <p role="alert">{planningError}</p>}
     </div>
   )
 }

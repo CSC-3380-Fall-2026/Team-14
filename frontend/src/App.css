@@ -16,7 +16,9 @@ input:focus-visible {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -226,7 +228,7 @@ main:focus {
   text-underline-offset: 4px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 850px) {
   .site-header {
     flex-wrap: wrap;
     gap: 12px;
