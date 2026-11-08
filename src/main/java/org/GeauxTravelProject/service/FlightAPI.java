@@ -139,9 +139,9 @@ import org.springframework.stereotype.Service;
             //AlSO need to create a box where the user inputs their home airport
 
             //get from the lat and long
-            String destination_airport = "N/A";
+            String destination_airport = "MSY";
 
-            return generateFlight(destination_airport, "OGG", "1", "2026-10-21", "2026-10-26");
+            return null ;//generateFlight("MSY", "OGG", "1", "2026-10-21", "2026-10-26");
         }
 
     }

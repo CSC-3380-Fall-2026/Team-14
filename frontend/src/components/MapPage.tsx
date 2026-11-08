@@ -7,7 +7,7 @@ import DestinationSearch from './DestinationSearch'
 
 type MapStatus = 'loading' | 'ready' | 'error' | 'unsupported'
 
-const fallbackToken = 'pk.eyJ1IjoiY29vbHByaW5jZXNzcGluazM0NSIsImEiOiJjbXZ2ZTkycHIwMHdtMnlvaTd1ZmsydmJqIn0.GEWiIErAiP3ZcAm7RLK4Uw'
+const fallbackToken = 'accesstoken'
 
 type MapPageProps = {
   destination: Destination | null
@@ -116,6 +116,42 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
   }, [destination, status, attempt, onDestinationChange])
 
   const unavailable = status === 'error' || status === 'unsupported'
+      const [isSending, setIsSending] = useState(false)
+
+      //function to send data to the backend
+      const handlePlanTrip = async () => {
+        if (!destination) return
+
+        setIsSending(true)
+        try {
+          const response = await fetch('/api/itinerary/click', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              latitude: destination.latitude,
+              longitude: destination.longitude,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to send destination to backend')
+          }
+
+          const data = await response.json()
+          console.log('Itinerary data received from backend:', data)
+
+          window.location.hash = '/preferences'
+
+        } catch (error) {
+          console.error('Error sending coordinates:', error)
+          alert('Could not start your trip. Please try again.')
+        } finally {
+          setIsSending(false)
+        }
+      }
+
 
   return (
     <section className="destination-map" aria-labelledby="destination-map-title">
@@ -199,7 +235,14 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
           </button>
           {destination && (
             <>
-              <a id="destination-map-confirm" href="#/preferences">Plan a trip here</a>
+              <button
+                type="button"
+                id="destination-map-confirm"
+                disabled={isSending}
+                onClick={handlePlanTrip}
+              >
+                {isSending ? 'Creating trip...' : 'Plan a trip here'}
+              </button>
               <button type="button" onClick={() => onDestinationChange(null)}>Clear destination</button>
             </>
           )}
