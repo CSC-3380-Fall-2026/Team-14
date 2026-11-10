@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 
             //API stuff - feeding it the parameters
             Map<String, String> auth = new HashMap<>();
-            auth.put("api_key", "api key");
+            auth.put("api_key", "_api key_");
             SerpApi client = new SerpApi(auth);
             Map<String, String> params = new HashMap<>();
             params.put("engine", "google_flights");
