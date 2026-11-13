@@ -18,7 +18,47 @@ import org.springframework.stereotype.Service;
             findNearestAirport(30.471165, -91.147385);
         }
 
-            /**
+        /**
+         * Generates a JsonObject of different outbound and return dates with different prices
+         * @param destination_airport closest airport generated from the lat and lngs given
+         * @param departure_airport provided home airport from user
+         * @return JsonObject data
+         */
+        public static JsonObject bestFlightPrices(String destination_airport, String departure_airport) {
+            destination_airport = destination_airport.toUpperCase();
+            departure_airport = departure_airport.toUpperCase();
+
+            Map<String, String> auth = new HashMap<>();
+            auth.put("api_key", "api_key");
+            auth.put("engine", "google_flights_calendar");
+
+            SerpApi client = new SerpApi(auth);
+            Map<String, String> params = new HashMap<>();
+
+            params.put("departure_id", departure_airport);
+            params.put("arrival_id", destination_airport);
+            params.put("currency", "USD");
+            params.put("type", "1");
+
+            JsonObject data = null;
+
+            try {
+                data = client.search(params);
+            } catch (SerpApiException e) {
+                throw new RuntimeException(e);
+            }
+
+            //use for testing - can delete later
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            System.out.println(gson.toJson(data));
+
+            //Ruby take this info, find the best priced flight and return the
+            // dates so generateFlight, PlaceRandomizer, and getSevenDayForecast can use it
+            return data;
+        }
+
+
+        /**
              * Generates about 3-4 separate flight info using the given parameters. It loops through all the different flight
              * objects saves it to a reference of 'FlightQueury', which is then stored in a map. Must use a key to access
              * the separate instances inside the map which can then be used like a normal instance.
