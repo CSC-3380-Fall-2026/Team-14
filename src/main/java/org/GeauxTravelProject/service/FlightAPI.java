@@ -1,5 +1,7 @@
 package org.GeauxTravelProject.service;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import serpapi.SerpApi;
@@ -11,14 +13,19 @@ import org.springframework.stereotype.Service;
 
     @Service
     public class FlightAPI {
-        /**
-         * Generates about 3-4 separate flight info using the given parameters. It loops through all the different flight
-         * objects saves it to a reference of 'FlightQueury', which is then stored in a map. Must use a key to access
-         * the separate instances inside the map which can then be used like a normal instance.
-         *
-         * @param destination_airport, departure_airport, type, outbound_date, return_date
-         * @return all_flight_data
-         */
+        //remove when done testing
+        public static void main(String[] args) {
+            findNearestAirport(30.471165, -91.147385);
+        }
+
+            /**
+             * Generates about 3-4 separate flight info using the given parameters. It loops through all the different flight
+             * objects saves it to a reference of 'FlightQueury', which is then stored in a map. Must use a key to access
+             * the separate instances inside the map which can then be used like a normal instance.
+             *
+             * @param destination_airport, departure_airport, type, outbound_date, return_date
+             * @return all_flight_data
+             */
         public static Map<String, FlightQueury> generateFlight(String destination_airport, String departure_airport, String type, String outbound_date, String return_date)  {
             destination_airport = destination_airport.toUpperCase();
             departure_airport = departure_airport.toUpperCase();
@@ -27,7 +34,7 @@ import org.springframework.stereotype.Service;
 
             //API stuff - feeding it the parameters
             Map<String, String> auth = new HashMap<>();
-            auth.put("api_key", "_api key_");
+            auth.put("api_key", "api_key");
             SerpApi client = new SerpApi(auth);
             Map<String, String> params = new HashMap<>();
             params.put("engine", "google_flights");
@@ -133,15 +140,71 @@ import org.springframework.stereotype.Service;
             return all_flight_data;
         }
 
-        public static Map<String, FlightQueury> findNearestAirport(double latitude, double longitude) {
+        /**
+         * finds the closest airport based on the given lat and long
+         * @param latitude given latitude
+         * @param longitude given longitude
+         * @return calls bestFlightPrices if found a suitable airport; if not returns an empty jsonobject
+         */
+        public static JsonObject findNearestAirport(double latitude, double longitude) {
             //based off of the lat and long it is going to find the nearest airport
             //then it will call 'generateFlight' using that info
-            //AlSO need to create a box where the user inputs their home airport
 
-            //get from the lat and long
-            String destination_airport = "MSY";
+            String leave = "MSY";
+            int zoom = 14;
+            String airport_name = null;
+            JsonObject emptyJson = new JsonObject();
 
-            return null ;//generateFlight("MSY", "OGG", "1", "2026-10-21", "2026-10-26");
+            while (zoom <= 50) {
+                Map<String, String> auth = new HashMap<>();
+                auth.put("api_key", "api_key");
+                auth.put("engine", "google_maps_autocomplete");
+
+                SerpApi client = new SerpApi(auth);
+                Map<String, String> parameter = new HashMap<>();
+
+                String zoom2 = Integer.toString(zoom);
+                String lat_long_coordinates = "@" + latitude + "," + longitude + "," + zoom2 + "z";
+
+                parameter.put("q", "airport");
+                parameter.put("ll", lat_long_coordinates);
+
+                try {
+                    JsonObject results = client.search(parameter);
+                    var suggestions = results.get("suggestions");
+
+                    if (suggestions.isJsonNull()) {
+                        zoom += 5;
+                        continue;
+                    }
+
+                    for (int i = 0; i < suggestions.getAsJsonArray().size(); i++) {
+                        JsonArray suggestions_lvl1 = suggestions.getAsJsonArray();
+                        JsonObject airport_suggestion = suggestions_lvl1.get(i).getAsJsonObject();
+                        airport_name = airport_suggestion.has("value") ? airport_suggestion.get("value").getAsString() : "N/A";
+
+                        if (airport_name.equals("N/A")) {
+                            continue;
+                        }
+                        if (airport_name.matches(".*\\([a-zA-Z]{3}\\)$")) {
+                            int len = airport_name.length();
+                            String airport_code = airport_name.substring(len - 4, len - 1);
+
+                            System.out.println("\nfound a close airport to coordinates " + airport_name);
+                            System.out.println("\nfound airport code " + airport_code);
+
+                            return bestFlightPrices(airport_code, leave);
+                        }
+                    }
+
+                } catch (SerpApiException ex) {
+                    System.out.println("Exception:");
+                    System.out.println(ex.toString());
+                    break;
+                }
+
+            }
+            return emptyJson;
         }
 
     }
