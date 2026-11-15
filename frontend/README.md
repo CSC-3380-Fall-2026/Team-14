@@ -37,8 +37,9 @@ The Java work is still in the repository root and is separate from this frontend
 ## Map and trip preferences
 
 The home page includes the Mapbox map from Mackenzie's map feature. The
-map supports pan, zoom, rotation, and keyboard controls. If the map cannot
-load, the page shows a message and still links to trip preferences.
+map supports pan, zoom, rotation, and keyboard controls. With a configured
+token, destination search can still be used if the interactive map cannot
+load. The home page also links directly to trip preferences.
 
 Search for a city, region, or address, then choose a result to place the
 destination pin. You can also click the map or drag the pin, including
@@ -63,9 +64,9 @@ other fields intact.
 `#/map` opens home for links made before the map moved to the homepage.
 
 Mapbox is installed in `frontend`, with the rest of the app dependencies.
-The existing public browser token is used by default. Set
-`VITE_MAPBOX_TOKEN` in `frontend/.env.local` to use a different public
-Mapbox token. Never put a secret token in a `VITE_` variable.
+Set `VITE_MAPBOX_TOKEN` in `frontend/.env.local` to a public Mapbox browser
+token and restart Vite. The map and search require this setting. Leave
+`.env.local` out of Git and never put a secret token in a `VITE_` variable.
 
 ## Issue 2 pages
 
