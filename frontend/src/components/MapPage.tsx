@@ -19,6 +19,13 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
   const token = import.meta.env.VITE_MAPBOX_TOKEN?.trim() ?? ''
   const [status, setStatus] = useState<MapStatus>(token ? 'loading' : 'unconfigured')
   const [attempt, setAttempt] = useState(0)
+  const planRequest = useRef<AbortController | null>(null)
+  const [planStatus, setPlanStatus] = useState<{ destination: Destination; state: 'sending' | 'failed' } | null>(null)
+
+  useEffect(() => () => {
+    planRequest.current?.abort()
+    planRequest.current = null
+  }, [destination])
 
   useEffect(() => {
     const container = mapContainerRef.current
@@ -114,42 +121,35 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
   }, [destination, status, attempt, onDestinationChange])
 
   const canRetryMap = status === 'error'
-      const [isSending, setIsSending] = useState(false)
+  const currentPlanStatus = planStatus?.destination === destination ? planStatus.state : null
 
-      //function to send data to the backend
-      const handlePlanTrip = async () => {
-        if (!destination) return
+  async function handlePlanTrip() {
+    if (!destination || planRequest.current) return
+    const request = new AbortController()
+    planRequest.current = request
+    setPlanStatus({ destination, state: 'sending' })
+    const timeout = window.setTimeout(() => request.abort(), 10000)
 
-        setIsSending(true)
-        try {
-          const response = await fetch('/api/itinerary/click', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              latitude: destination.latitude,
-              longitude: destination.longitude,
-            }),
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to send destination to backend')
-          }
-
-          const data = await response.json()
-          console.log('Itinerary data received from backend:', data)
-
-          window.location.hash = '/preferences'
-
-        } catch (error) {
-          console.error('Error sending coordinates:', error)
-          alert('Could not start your trip. Please try again.')
-        } finally {
-          setIsSending(false)
-        }
+    try {
+      const response = await fetch('/api/itinerary/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: destination.latitude, longitude: destination.longitude }),
+        signal: request.signal,
+      })
+      if (!response.ok) throw new Error('Trip lookup failed')
+      await response.json()
+      if (planRequest.current === request) {
+        setPlanStatus(null)
+        window.location.hash = '#/preferences'
       }
-
+    } catch {
+      if (planRequest.current === request) setPlanStatus({ destination, state: 'failed' })
+    } finally {
+      window.clearTimeout(timeout)
+      if (planRequest.current === request) planRequest.current = null
+    }
+  }
 
   return (
     <section className="destination-map" aria-labelledby="destination-map-title">
@@ -221,7 +221,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
       <div className="destination-map-selection">
         <p role="status">
           {destination ? (
-            <>Selected destination: latitude {destination.latitude.toFixed(5)}, longitude {destination.longitude.toFixed(5)}.</>
+            <>Selected destination: {destination.label ?? 'Dropped pin'} ({destination.latitude.toFixed(5)}, {destination.longitude.toFixed(5)}).</>
           ) : token ? 'Search for a destination or choose a spot on the map.' : 'No destination selected.'}
         </p>
         <div className="destination-map-actions">
@@ -240,15 +240,18 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
               <button
                 type="button"
                 id="destination-map-confirm"
-                disabled={isSending}
+                disabled={currentPlanStatus === 'sending'}
                 onClick={handlePlanTrip}
               >
-                {isSending ? 'Creating trip...' : 'Plan a trip here'}
+                {currentPlanStatus === 'sending' ? 'Creating trip...' : 'Plan a trip here'}
               </button>
               <button type="button" onClick={() => onDestinationChange(null)}>Clear destination</button>
             </>
           )}
         </div>
+        {currentPlanStatus === 'failed' && (
+          <p role="status">Trip details are unavailable right now. <a href="#/preferences">Continue to trip preferences</a></p>
+        )}
       </div>
     </section>
   )

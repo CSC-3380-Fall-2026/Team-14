@@ -48,7 +48,8 @@ export default function MyTripsPage({ trips, storageError, status, onOpen, onDel
               <span className="example-badge">Example plan</span>
               <h3>Trip {index + 1}: {trip.preferences.startDate} – {trip.preferences.endDate}</h3>
               <dl className="compact-details">
-                <div><dt>Destination coordinates</dt><dd>{trip.preferences.destination ? `${trip.preferences.destination.latitude.toFixed(4)}, ${trip.preferences.destination.longitude.toFixed(4)}` : 'No destination'}</dd></div>
+                <div><dt>Destination</dt><dd>{trip.preferences.destination ? trip.preferences.destination.label
+                  ?? `${trip.preferences.destination.latitude.toFixed(4)}, ${trip.preferences.destination.longitude.toFixed(4)}` : 'No destination'}</dd></div>
                 <div><dt>Pace</dt><dd>{trip.preferences.pace}</dd></div>
                 <div><dt>Travelers</dt><dd>{trip.preferences.travelers}</dd></div>
               </dl>

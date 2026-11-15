@@ -39,6 +39,7 @@ function TripPreferences({ draft, onPreferencesChange, onPreview, planningError 
         <h2 id="trip-destination-title">Destination</h2>
         {destination ? (
           <>
+            <p><strong>{destination.label ?? 'Dropped pin'}</strong></p>
             <p>
               Latitude: {destination.latitude.toFixed(5)}
               <br />

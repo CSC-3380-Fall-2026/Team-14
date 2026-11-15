@@ -91,7 +91,7 @@ export default function DestinationSearch({ token, disabled, onSelect }: Destina
             <li key={`${result.id}-${index}`}>
               <button type="button" disabled={disabled} onClick={() => {
                 focusConfirmation.current = true
-                onSelect(result.destination)
+                onSelect({ ...result.destination, label: result.label })
                 setResults([])
                 setMessage('')
               }}>{result.label}</button>
