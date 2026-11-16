@@ -5,9 +5,7 @@ import './MapPage.css'
 import type { Destination } from '../tripDraft'
 import DestinationSearch from './DestinationSearch'
 
-type MapStatus = 'loading' | 'ready' | 'error' | 'unsupported'
-
-const fallbackToken = 'accesstoken'
+type MapStatus = 'unconfigured' | 'loading' | 'ready' | 'error' | 'unsupported'
 
 type MapPageProps = {
   destination: Destination | null
@@ -18,13 +16,13 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MapboxMap | null>(null)
   const markerRef = useRef<Marker | null>(null)
-  const token = import.meta.env.VITE_MAPBOX_TOKEN?.trim() || fallbackToken
-  const [status, setStatus] = useState<MapStatus>('loading')
+  const token = import.meta.env.VITE_MAPBOX_TOKEN?.trim() ?? ''
+  const [status, setStatus] = useState<MapStatus>(token ? 'loading' : 'unconfigured')
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     const container = mapContainerRef.current
-    if (!container) return
+    if (!container || !token) return
 
     let active = true
     let initialized = false
@@ -115,7 +113,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
     }
   }, [destination, status, attempt, onDestinationChange])
 
-  const unavailable = status === 'error' || status === 'unsupported'
+  const canRetryMap = status === 'error'
       const [isSending, setIsSending] = useState(false)
 
       //function to send data to the backend
@@ -167,10 +165,12 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
       </div>
 
       <DestinationSearch
-        key={attempt} token={token} disabled={status !== 'ready'}
+        token={token} disabled={!token}
         onSelect={point => {
           onDestinationChange(point)
-          mapRef.current?.jumpTo({ center: [point.longitude, point.latitude], zoom: 11 })
+          if (status === 'ready') {
+            mapRef.current?.jumpTo({ center: [point.longitude, point.latitude], zoom: 11 })
+          }
         }}
       />
 
@@ -188,9 +188,11 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
         {status !== 'ready' && (
           <div className="destination-map-overlay">
             <div className="destination-map-message" role="status">
-              {status === 'loading' ? (
-                <p>Loading the map…</p>
-              ) : (
+              {status === 'unconfigured' && (
+                <p>Destination map and search are unavailable. You can still open trip preferences.</p>
+              )}
+              {status === 'loading' && <p>Loading the map…</p>}
+              {(status === 'error' || status === 'unsupported') && (
                 <>
                   <h3>Map unavailable</h3>
                   <p>
@@ -200,7 +202,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
                   </p>
                 </>
               )}
-              {unavailable && (
+              {canRetryMap && (
                 <button
                   className="destination-map-retry"
                   type="button"
@@ -220,7 +222,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
         <p role="status">
           {destination ? (
             <>Selected destination: latitude {destination.latitude.toFixed(5)}, longitude {destination.longitude.toFixed(5)}.</>
-          ) : 'Choose a spot on the map to start planning.'}
+          ) : token ? 'Search for a destination or choose a spot on the map.' : 'No destination selected.'}
         </p>
         <div className="destination-map-actions">
           <button

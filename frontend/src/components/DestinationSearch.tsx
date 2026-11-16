@@ -47,13 +47,13 @@ export default function DestinationSearch({ token, disabled, onSelect }: Destina
       const matches = await searchDestinations(query, token, request.signal)
       if (requestRef.current !== request) return
       setResults(matches)
-      setMessage(matches.length ? 'Choose a result to place the pin.' : 'No places found. Try another city, region, or address.')
+      setMessage(matches.length ? 'Choose a result to select your destination.' : 'No places found. Try another city, region, or address.')
     } catch (error) {
       if (requestRef.current !== request) return
       setMessage(request.signal.aborted
-        ? 'Search took too long. Try again or choose a spot on the map.'
+        ? 'Search took too long. Please try again.'
         : error instanceof TypeError
-          ? 'Search could not connect. Check your connection or choose a spot on the map.'
+          ? 'Search could not connect. Check your connection and try again.'
           : error instanceof Error ? error.message : 'Search could not finish. Please try again.')
     } finally {
       window.clearTimeout(timeout)
