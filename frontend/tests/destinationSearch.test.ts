@@ -3,12 +3,12 @@ import test from 'node:test'
 import { searchDestinations } from '../src/destinationSearch.ts'
 
 const feature = {
-  type: 'Feature', id: 'dXJuOm1ieHBsYzpmb28',
+  type: 'Feature',
   geometry: { type: 'Point', coordinates: [-90.07012, 29.97599] },
-  properties: { name: 'New Orleans', place_formatted: 'Louisiana, United States', full_address: 'New Orleans, Louisiana, United States' },
+  properties: { osm_type: 'R', osm_id: 123, name: 'New Orleans', state: 'Louisiana', country: 'United States' },
 }
 
-test('search returns labeled longitude/latitude results and emits an encoded permanent query', async (t) => {
+test('search works without a key and sends an encoded Photon query only', async (t) => {
   let requested: URL | undefined
   let requestSignal: AbortSignal | null | undefined
   t.mock.method(globalThis, 'fetch', async (input: string | URL | Request, init?: RequestInit) => {
@@ -17,25 +17,27 @@ test('search returns labeled longitude/latitude results and emits an encoded per
     return Response.json({ type: 'FeatureCollection', features: [feature] })
   })
   const controller = new AbortController()
-  const results = await searchDestinations('  New Orleans & river  ', 'pk.example', controller.signal)
-  assert.deepEqual(results, [{ id: 'dXJuOm1ieHBsYzpmb28', label: 'New Orleans, Louisiana, United States', destination: { longitude: -90.07012, latitude: 29.97599 } }])
-  assert.equal(requested?.origin, 'https://api.mapbox.com')
-  assert.equal(requested?.pathname, '/search/geocode/v6/forward')
+  const results = await searchDestinations('  New Orleans & river  ', controller.signal)
+  assert.deepEqual(results, [{ id: 'R123', label: 'New Orleans, Louisiana, United States', destination: { longitude: -90.07012, latitude: 29.97599 } }])
+  assert.equal(requested?.origin, 'https://photon.komoot.io')
+  assert.equal(requested?.pathname, '/api/')
   assert.equal(requested?.searchParams.get('q'), 'New Orleans & river')
-  assert.equal(requested?.searchParams.get('access_token'), 'pk.example')
-  assert.equal(requested?.searchParams.get('autocomplete'), 'false')
-  assert.equal(requested?.searchParams.get('permanent'), 'true')
+  assert.equal(requested?.searchParams.get('limit'), '5')
+  assert.equal(requested?.searchParams.has('access_token'), false)
   assert.equal(requestSignal, controller.signal)
 })
 
-test('search accepts a zero coordinate and falls back to name plus place context', async (t) => {
-  t.mock.method(globalThis, 'fetch', async () => Response.json({ features: [{
-    ...feature, geometry: { type: 'Point', coordinates: [0, 0] },
-    properties: { name: 'Origin', place_formatted: 'Example region' },
-  }] }))
-  assert.deepEqual((await searchDestinations('Origin', 'pk.example'))[0], {
-    id: feature.id, label: 'Origin, Example region', destination: { latitude: 0, longitude: 0 },
+test('search supports another Photon service and preserves address context without duplicates', async (t) => {
+  let requested = ''
+  t.mock.method(globalThis, 'fetch', async (input: unknown) => {
+    requested = String(input)
+    return Response.json({ features: [{ ...feature, geometry: { type: 'Point', coordinates: [0, 0] },
+      properties: { name: 'Museum', street: 'Main Street', housenumber: '5', city: 'Paris', state: 'Paris', country: 'France' } }] })
   })
+  assert.deepEqual((await searchDestinations('Museum', undefined, 'https://search.example/api'))[0], {
+    id: '0', label: 'Museum, 5 Main Street, Paris, France', destination: { latitude: 0, longitude: 0 },
+  })
+  assert.equal(new URL(requested).origin, 'https://search.example')
 })
 
 test('search ignores malformed results instead of selecting invalid coordinates', async (t) => {
@@ -46,47 +48,84 @@ test('search ignores malformed results instead of selecting invalid coordinates'
     { ...feature, geometry: { type: 'Point', coordinates: ['10', 20] } },
     { ...feature, properties: {} }, feature,
   ] }))
-  assert.equal((await searchDestinations('New Orleans', 'pk.example')).length, 1)
+  assert.equal((await searchDestinations('New Orleans', undefined, 'https://search.example/invalid')).length, 1)
 })
 
 test('a successful empty result list remains a normal no-match result', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => Response.json({ features: [] }))
-  assert.deepEqual(await searchDestinations('No such place', 'pk.example'), [])
+  assert.deepEqual(await searchDestinations('No such place', undefined, 'https://search.example/empty'), [])
 })
 
-test('an invalid response is reported as an error rather than a successful empty search', async (t) => {
-  t.mock.method(globalThis, 'fetch', async () => Response.json({ unexpected: true }))
-  await assert.rejects(searchDestinations('New Orleans', 'pk.example'), /could not read/i)
-})
-
-test('a non-JSON provider response produces a readable failure message', async (t) => {
-  t.mock.method(globalThis, 'fetch', async () => new Response('<html>Unavailable</html>'))
-  await assert.rejects(searchDestinations('New Orleans', 'pk.example'), /could not read/i)
+test('invalid and non-JSON responses produce readable failures', async (t) => {
+  for (const [index, response] of [Response.json({ unexpected: true }), new Response('<html>Unavailable</html>')].entries()) {
+    const mock = t.mock.method(globalThis, 'fetch', async () => response)
+    await assert.rejects(searchDestinations('New Orleans', undefined, `https://search.example/response-${index}`), /could not read/i)
+    mock.mock.restore()
+  }
 })
 
 test('blank, too long, and too many word queries are rejected before a request', async (t) => {
   let requests = 0
   t.mock.method(globalThis, 'fetch', async () => { requests++; return Response.json({ features: [] }) })
   for (const query of ['', ' ', 'a', 'x'.repeat(201), Array(21).fill('city').join(' ')]) {
-    await assert.rejects(searchDestinations(query, 'pk.example'), /enter|shorter/i)
+    await assert.rejects(searchDestinations(query), /enter|shorter/i)
   }
   assert.equal(requests, 0)
 })
 
-test('account and rate-limit failures give actionable messages', async (t) => {
-  for (const [status, message] of [[401, /token|account/i], [403, /token|account/i], [422, /shorter/i], [429, /wait/i], [500, /try again/i]] as const) {
+test('provider and rate-limit failures give actionable messages', async (t) => {
+  for (const [status, message] of [[403, /unavailable/i], [400, /shorter/i], [429, /wait/i], [500, /try again/i]] as const) {
     const mock = t.mock.method(globalThis, 'fetch', async () => Response.json({ message: 'provider detail' }, { status }))
-    await assert.rejects(searchDestinations('New Orleans', 'pk.example'), message)
+    await assert.rejects(searchDestinations('New Orleans', undefined, `https://search.example/status-${status}`), message)
     mock.mock.restore()
   }
 })
 
-test('request cancellation propagates so the UI can ignore obsolete results', async (t) => {
+test('repeated searches use a copy of cached results without another provider request', async (t) => {
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => { requests++; return Response.json({ features: [feature] }) })
+  const endpoint = 'https://search.example/cache'
+  const first = await searchDestinations('New Orleans', undefined, endpoint)
+  first[0].destination.latitude = 0
+  const second = await searchDestinations(' new orleans ', undefined, endpoint)
+  assert.equal(second[0].destination.latitude, 29.97599)
+  assert.equal(requests, 1)
+})
+
+test('rapid uncached searches are limited while later searches can proceed', async (t) => {
+  let now = 1000
+  t.mock.method(Date, 'now', () => now)
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => { requests++; return Response.json({ features: [] }) })
+  const endpoint = 'https://search.example/pace'
+  await searchDestinations('Paris', undefined, endpoint)
+  await assert.rejects(searchDestinations('London', undefined, endpoint), /wait/i)
+  assert.equal(requests, 1)
+  now = 2000
+  await searchDestinations('London', undefined, endpoint)
+  assert.equal(requests, 2)
+})
+
+test('expired cached searches refresh from the provider', async (t) => {
+  let now = 0
+  t.mock.method(Date, 'now', () => now)
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => { requests++; return Response.json({ features: [] }) })
+  const endpoint = 'https://search.example/expire'
+  await searchDestinations('Paris', undefined, endpoint)
+  now = 11 * 60 * 1000
+  await searchDestinations('Paris', undefined, endpoint)
+  assert.equal(requests, 2)
+})
+
+test('request cancellation prevents even a cached or obsolete request from returning', async (t) => {
   t.mock.method(globalThis, 'fetch', async (_input: unknown, init?: RequestInit) => {
     init?.signal?.throwIfAborted()
     return Response.json({ features: [] })
   })
+  const endpoint = 'https://search.example/cancel'
+  await searchDestinations('Paris', undefined, endpoint)
   const controller = new AbortController()
   controller.abort()
-  await assert.rejects(searchDestinations('New Orleans', 'pk.example', controller.signal), { name: 'AbortError' })
+  await assert.rejects(searchDestinations('Paris', controller.signal, endpoint), { name: 'AbortError' })
 })

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import mapboxgl, { type Map as MapboxMap, type MapMouseEvent, type Marker } from 'mapbox-gl'
-import 'mapbox-gl/dist/mapbox-gl.css'
+import { Map as MapLibreMap, NavigationControl, Marker, type MapMouseEvent } from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import './MapPage.css'
 import type { Destination } from '../tripDraft'
 import DestinationSearch from './DestinationSearch'
+import { createMapReadiness } from '../mapReadiness'
 
-type MapStatus = 'unconfigured' | 'loading' | 'ready' | 'error' | 'unsupported'
+type MapStatus = 'loading' | 'ready' | 'error'
 
 type MapPageProps = {
   destination: Destination | null
@@ -14,25 +15,34 @@ type MapPageProps = {
 
 export default function MapPage({ destination, onDestinationChange }: MapPageProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
-  const mapRef = useRef<MapboxMap | null>(null)
+  const mapRef = useRef<MapLibreMap | null>(null)
   const markerRef = useRef<Marker | null>(null)
-  const token = import.meta.env.VITE_MAPBOX_TOKEN?.trim() ?? ''
-  const [status, setStatus] = useState<MapStatus>(token ? 'loading' : 'unconfigured')
+  const [status, setStatus] = useState<MapStatus>('loading')
   const [attempt, setAttempt] = useState(0)
+  const planRequest = useRef<AbortController | null>(null)
+  const [planStatus, setPlanStatus] = useState<{ destination: Destination; state: 'sending' | 'failed' } | null>(null)
+
+  useEffect(() => () => {
+    planRequest.current?.abort()
+    planRequest.current = null
+  }, [destination])
 
   useEffect(() => {
     const container = mapContainerRef.current
-    if (!container || !token) return
+    if (!container) return
 
     let active = true
-    let initialized = false
-    let map: MapboxMap | undefined
+    let map: MapLibreMap | undefined
     let loadingTimeout: number | undefined
 
-    const showError = () => {
-      if (initialized) return
-      if (active) setStatus('error')
+    const readiness = createMapReadiness(state => {
+      if (active) setStatus(state)
+      if (state === 'ready') window.clearTimeout(loadingTimeout)
+    })
+    const showError = () => readiness.failed()
+    const settleMap = () => {
       window.clearTimeout(loadingTimeout)
+      readiness.loaded()
     }
     const selectDestination = (event: MapMouseEvent) => {
       if (active) onDestinationChange({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })
@@ -42,15 +52,23 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
       if (!active) return
 
       try {
-        if (!mapboxgl.supported()) {
-          setStatus('unsupported')
-          return
-        }
-
-        map = new mapboxgl.Map({
-          accessToken: token,
+        map = new MapLibreMap({
           container,
-          style: 'mapbox://styles/mapbox/streets-v12',
+          style: {
+            version: 8,
+            sources: {
+              openstreetmap: {
+                type: 'raster',
+                tiles: [import.meta.env.VITE_MAP_TILE_URL?.trim() || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                maxzoom: 19,
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+              },
+            },
+            layers: [{ id: 'openstreetmap', type: 'raster', source: 'openstreetmap' }],
+          },
+          attributionControl: false,
+          maxZoom: 19,
           center: [-74.5, 40],
           zoom: 9,
           keyboard: true,
@@ -61,16 +79,13 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
         map.getCanvas().setAttribute('aria-label', 'Interactive destination map')
         map.getCanvas().setAttribute('aria-describedby', 'destination-map-instructions')
         map.getCanvas().style.cursor = 'crosshair'
-        map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+        map.addControl(new NavigationControl(), 'top-right')
 
         map.on('error', showError)
         map.on('click', selectDestination)
-        map.once('load', () => {
-          initialized = true
-          window.clearTimeout(loadingTimeout)
-          if (active) setStatus('ready')
-        })
-        loadingTimeout = window.setTimeout(showError, 20000)
+        map.on('sourcedata', readiness.sourceData)
+        map.once('load', settleMap)
+        loadingTimeout = window.setTimeout(settleMap, 20000)
       } catch {
         showError()
       }
@@ -82,12 +97,14 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
       window.clearTimeout(loadingTimeout)
       map?.off('error', showError)
       map?.off('click', selectDestination)
+      map?.off('sourcedata', readiness.sourceData)
+      map?.off('load', settleMap)
       markerRef.current?.remove()
       markerRef.current = null
       map?.remove()
       if (mapRef.current === map) mapRef.current = null
     }
-  }, [attempt, onDestinationChange, token])
+  }, [attempt, onDestinationChange])
 
   useEffect(() => {
     const map = mapRef.current
@@ -99,7 +116,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
     }
     const coordinates: [number, number] = [destination.longitude, destination.latitude]
     if (!markerRef.current) {
-      const marker = new mapboxgl.Marker({ color: '#5d4272', draggable: true })
+      const marker = new Marker({ color: '#5d4272', draggable: true })
         .setLngLat(coordinates).addTo(map)
       marker.getElement().setAttribute('aria-hidden', 'true')
       marker.on('dragend', () => {
@@ -114,42 +131,35 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
   }, [destination, status, attempt, onDestinationChange])
 
   const canRetryMap = status === 'error'
-      const [isSending, setIsSending] = useState(false)
+  const currentPlanStatus = planStatus?.destination === destination ? planStatus.state : null
 
-      //function to send data to the backend
-      const handlePlanTrip = async () => {
-        if (!destination) return
+  async function handlePlanTrip() {
+    if (!destination || planRequest.current) return
+    const request = new AbortController()
+    planRequest.current = request
+    setPlanStatus({ destination, state: 'sending' })
+    const timeout = window.setTimeout(() => request.abort(), 10000)
 
-        setIsSending(true)
-        try {
-          const response = await fetch('/api/itinerary/click', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              latitude: destination.latitude,
-              longitude: destination.longitude,
-            }),
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to send destination to backend')
-          }
-
-          const data = await response.json()
-          console.log('Itinerary data received from backend:', data)
-
-          window.location.hash = '/preferences'
-
-        } catch (error) {
-          console.error('Error sending coordinates:', error)
-          alert('Could not start your trip. Please try again.')
-        } finally {
-          setIsSending(false)
-        }
+    try {
+      const response = await fetch('/api/itinerary/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: destination.latitude, longitude: destination.longitude }),
+        signal: request.signal,
+      })
+      if (!response.ok) throw new Error('Trip lookup failed')
+      await response.json()
+      if (planRequest.current === request) {
+        setPlanStatus(null)
+        window.location.hash = '#/preferences'
       }
-
+    } catch {
+      if (planRequest.current === request) setPlanStatus({ destination, state: 'failed' })
+    } finally {
+      window.clearTimeout(timeout)
+      if (planRequest.current === request) planRequest.current = null
+    }
+  }
 
   return (
     <section className="destination-map" aria-labelledby="destination-map-title">
@@ -165,7 +175,7 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
       </div>
 
       <DestinationSearch
-        token={token} disabled={!token}
+        disabled={false}
         onSelect={point => {
           onDestinationChange(point)
           if (status === 'ready') {
@@ -188,17 +198,12 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
         {status !== 'ready' && (
           <div className="destination-map-overlay">
             <div className="destination-map-message" role="status">
-              {status === 'unconfigured' && (
-                <p>Destination map and search are unavailable. You can still open trip preferences.</p>
-              )}
               {status === 'loading' && <p>Loading the map…</p>}
-              {(status === 'error' || status === 'unsupported') && (
+              {status === 'error' && (
                 <>
                   <h3>Map unavailable</h3>
                   <p>
-                    {status === 'unsupported'
-                      ? 'This browser cannot display the interactive map. Try another browser or enable hardware acceleration in your browser settings.'
-                      : 'The map could not finish loading. Check your connection and try again.'}
+                    The map could not finish loading. Check your connection and try again, or search above to select a destination.
                   </p>
                 </>
               )}
@@ -218,11 +223,16 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
           </div>
         )}
       </div>
+      <p className="destination-map-attribution">
+        Map and search data: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+        {' '}Search by <a href="https://photon.komoot.io/">Photon</a>.
+        {' '}<a href="https://www.openstreetmap.org/fixthemap">Report a map issue</a>
+      </p>
       <div className="destination-map-selection">
         <p role="status">
           {destination ? (
-            <>Selected destination: latitude {destination.latitude.toFixed(5)}, longitude {destination.longitude.toFixed(5)}.</>
-          ) : token ? 'Search for a destination or choose a spot on the map.' : 'No destination selected.'}
+            <>Selected destination: {destination.label ?? 'Dropped pin'} ({destination.latitude.toFixed(5)}, {destination.longitude.toFixed(5)}).</>
+          ) : 'Search for a destination or choose a spot on the map.'}
         </p>
         <div className="destination-map-actions">
           <button
@@ -240,15 +250,18 @@ export default function MapPage({ destination, onDestinationChange }: MapPagePro
               <button
                 type="button"
                 id="destination-map-confirm"
-                disabled={isSending}
+                disabled={currentPlanStatus === 'sending'}
                 onClick={handlePlanTrip}
               >
-                {isSending ? 'Creating trip...' : 'Plan a trip here'}
+                {currentPlanStatus === 'sending' ? 'Creating trip...' : 'Plan a trip here'}
               </button>
               <button type="button" onClick={() => onDestinationChange(null)}>Clear destination</button>
             </>
           )}
         </div>
+        {currentPlanStatus === 'failed' && (
+          <p role="status">Trip details are unavailable right now. <a href="#/preferences">Continue to trip preferences</a></p>
+        )}
       </div>
     </section>
   )

@@ -1,7 +1,7 @@
 import { getTripDates } from './calendar.ts'
 import { parseMoney } from './money.ts'
 
-export type Destination = { latitude: number; longitude: number }
+export type Destination = { latitude: number; longitude: number; label?: string }
 
 export type TripPreferencesData = {
   startDate: string
@@ -32,7 +32,9 @@ export function normalizeDestination(destination: Destination): Destination | nu
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90) {
     return null
   }
-  return { latitude, longitude: ((longitude + 180) % 360 + 360) % 360 - 180 }
+  const normalized = { latitude, longitude: ((longitude + 180) % 360 + 360) % 360 - 180 }
+  const label = typeof destination.label === 'string' ? destination.label.trim() : ''
+  return label && label.length <= 300 ? { ...normalized, label } : normalized
 }
 
 export function tripDraftReducer(draft: TripDraft, action: TripDraftAction): TripDraft {

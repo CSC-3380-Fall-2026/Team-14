@@ -67,6 +67,19 @@ test('explicitly saved itinerary roundtrips as an independent snapshot', () => {
   assert.equal(writeSavedTrips(storage, []), null)
   assert.deepEqual(readSavedTrips(storage).trips, [])
 })
+
+test('saved trips keep searched place names and still open older coordinate-only plans', () => {
+  const storage = memoryStorage()
+  const named = generateExampleItinerary({
+    ...validDraft(), destination: { latitude: 30, longitude: -91, label: 'Baton Rouge, Louisiana' },
+  }, () => 0)
+  const unnamed = generateExampleItinerary(validDraft(), () => 0)
+  assert.equal(writeSavedTrips(storage, [named, unnamed]), null)
+  const loaded = readSavedTrips(storage)
+  assert.equal(loaded.error, null)
+  assert.equal(loaded.trips[0].preferences.destination?.label, 'Baton Rouge, Louisiana')
+  assert.deepEqual(loaded.trips[1].preferences.destination, { latitude: 30, longitude: -91 })
+})
 test('corrupt or unsupported saved records are reported without changing storage', () => {
   for (const raw of ['{broken', '{"version":2,"trips":[]}', '{"version":1,"trips":[{}]}']) {
     let writes = 0

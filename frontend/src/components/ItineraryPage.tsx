@@ -24,7 +24,8 @@ export default function ItineraryPage({ itinerary, isSaved, saveDisabled, saveMe
           <p className="page-intro">These are generic activity ideas. Places, prices, opening hours, and availability have not been verified. Check the details before making travel plans.</p>
           <section className="page-panel" aria-labelledby="trip-snapshot"><h2 id="trip-snapshot">Trip snapshot</h2>
             <dl className="trip-summary">
-              <div><dt>Destination coordinates</dt><dd>{preferences.destination ? `${preferences.destination.latitude.toFixed(4)}, ${preferences.destination.longitude.toFixed(4)}` : 'No destination'}</dd></div>
+              <div><dt>Destination</dt><dd>{preferences.destination ? preferences.destination.label
+                ?? `${preferences.destination.latitude.toFixed(4)}, ${preferences.destination.longitude.toFixed(4)}` : 'No destination'}</dd></div>
               <div><dt>Dates</dt><dd>{preferences.startDate} – {preferences.endDate}</dd></div>
               <div><dt>Travelers</dt><dd>{preferences.travelers}</dd></div>
               <div><dt>Budget per traveler</dt><dd>{preferences.budget} {preferences.currency}</dd></div>

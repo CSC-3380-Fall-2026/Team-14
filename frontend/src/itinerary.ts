@@ -1,5 +1,5 @@
 import { getTripDates } from './calendar.ts'
-import { isTripDraftValid, type TripDraft } from './tripDraft.ts'
+import { isTripDraftValid, normalizeDestination, type TripDraft } from './tripDraft.ts'
 
 export type ExampleItinerary = {
   id: string
@@ -19,7 +19,7 @@ const generalIdeas = ['Explore the neighborhood on foot', 'Leave time for a rela
   'Browse local shops', 'Take an afternoon break', 'Find a public viewpoint', 'Leave the evening open']
 
 export function copyTripDraft(draft: TripDraft): TripDraft {
-  return { destination: draft.destination ? { latitude: draft.destination.latitude, longitude: draft.destination.longitude } : null,
+  return { destination: draft.destination ? normalizeDestination(draft.destination) : null,
     startDate: draft.startDate, endDate: draft.endDate, budget: draft.budget,
     travelers: draft.travelers, currency: draft.currency, interests: [...draft.interests],
     pace: draft.pace, notes: draft.notes }

@@ -153,13 +153,13 @@
   background: #4b335e;
 }
 
-.destination-map .mapboxgl-ctrl-group button {
+.destination-map .maplibregl-ctrl-group button {
   width: 44px;
   height: 44px;
 }
 
-.destination-map .mapboxgl-ctrl button:focus-visible,
-.destination-map .mapboxgl-canvas:focus-visible {
+.destination-map .maplibregl-ctrl button:focus-visible,
+.destination-map .maplibregl-canvas:focus-visible {
   outline: 3px solid #78548f;
   outline-offset: -3px;
 }
@@ -217,4 +217,15 @@
   .destination-map-message {
     padding: 20px;
   }
+}
+
+.destination-map-attribution {
+  margin: 8px 0 0;
+  color: #514956;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.destination-map-attribution a {
+  color: #5d4272;
 }

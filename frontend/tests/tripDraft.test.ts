@@ -58,6 +58,20 @@ test('editing preferences keeps the selected destination and other fields', () =
   assert.equal(before.budget, '300')
 })
 
+test('a named search result keeps its label until the pin is adjusted', () => {
+  const selected = tripDraftReducer(createTripDraft(), {
+    type: 'destinationSelected',
+    destination: { latitude: 30.5, longitude: -91.25, label: ' Baton Rouge, Louisiana ' },
+  })
+  assert.deepEqual(selected.destination, {
+    latitude: 30.5, longitude: -91.25, label: 'Baton Rouge, Louisiana',
+  })
+  const moved = tripDraftReducer(selected, {
+    type: 'destinationSelected', destination: { latitude: 30.5, longitude: -91.5 },
+  })
+  assert.deepEqual(moved.destination, { latitude: 30.5, longitude: -91.5 })
+})
+
 test('clearing the destination preserves the rest of the trip draft', () => {
   const before = {
     ...createTripDraft(), destination: { latitude: 30.45, longitude: -91.19 },
