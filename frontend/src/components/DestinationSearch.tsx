@@ -3,12 +3,11 @@ import { searchDestinations, type DestinationSearchResult } from '../destination
 import type { Destination } from '../tripDraft'
 
 type DestinationSearchProps = {
-  token: string
   disabled: boolean
   onSelect: (destination: Destination) => void
 }
 
-export default function DestinationSearch({ token, disabled, onSelect }: DestinationSearchProps) {
+export default function DestinationSearch({ disabled, onSelect }: DestinationSearchProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<DestinationSearchResult[]>([])
   const [message, setMessage] = useState('')
@@ -44,7 +43,7 @@ export default function DestinationSearch({ token, disabled, onSelect }: Destina
     setMessage('Searching…')
     const timeout = window.setTimeout(() => request.abort(), 12000)
     try {
-      const matches = await searchDestinations(query, token, request.signal)
+      const matches = await searchDestinations(query, request.signal, import.meta.env.VITE_GEOCODING_URL?.trim() || undefined)
       if (requestRef.current !== request) return
       setResults(matches)
       setMessage(matches.length ? 'Choose a result to select your destination.' : 'No places found. Try another city, region, or address.')

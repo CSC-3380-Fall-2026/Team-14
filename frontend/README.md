@@ -36,10 +36,11 @@ The Java work is still in the repository root and is separate from this frontend
 
 ## Map and trip preferences
 
-The home page includes the Mapbox map from Mackenzie's map feature. The
-map supports pan, zoom, rotation, and keyboard controls. With a configured
-token, destination search can still be used if the interactive map cannot
-load. The home page also links directly to trip preferences.
+The home page uses MapLibre GL JS with OpenStreetMap raster tiles. No API
+key, Mapbox account, or billing setup is required. The map supports pan,
+zoom, rotation, and keyboard controls. Destination search stays available
+if the interactive map cannot load. The home page also links directly to
+trip preferences.
 
 Search for a city, region, or address, then choose a result to place the
 destination pin. You can also click the map or drag the pin, including
@@ -47,14 +48,16 @@ after a search. Keyboard users can search and choose a result, or move
 the map with the arrow keys and choose Use map center. Plan a trip here
 confirms the latest selected latitude and longitude in `#/preferences`.
 
-Search uses Mapbox Geocoding v6 only when the form is submitted, with up
-to five results. Requests use `permanent=true` because saved example trips
-can retain selected coordinates. The Mapbox account must support permanent
-geocoding; this code does not change account or billing settings. Token,
-account, connection, and rate-limit errors are shown while manual map
-selection stays available. Edits and navigation cancel obsolete searches;
-a search times out after 12 seconds. Search results are not added to the
-trip until the user chooses one. No geocoder package is added.
+Search uses [Photon](https://github.com/komoot/photon#demo-server), an
+OpenStreetMap geocoder, only when the form is submitted, with up to five
+results. There is no search-as-you-type traffic. Successful searches,
+including empty results, are cached in memory for ten minutes (up to 50
+queries); repeated queries reuse the cache. New queries are limited to one
+request per second per browser session. Failed requests are not cached.
+Edits and navigation cancel obsolete searches; a search times out after
+12 seconds. Search results are not added to the trip until the user
+chooses one. Provider, connection, and rate-limit errors are shown while
+manual map selection stays available.
 
 The destination and form fields stay in the draft while moving between
 pages. Reloading the page clears that unsaved draft. The example itinerary
@@ -63,10 +66,35 @@ plan. Clear destination removes only the pin and coordinates, leaving the
 other fields intact.
 `#/map` opens home for links made before the map moved to the homepage.
 
-Mapbox is installed in `frontend`, with the rest of the app dependencies.
-Set `VITE_MAPBOX_TOKEN` in `frontend/.env.local` to a public Mapbox browser
-token and restart Vite. The map and search require this setting. Leave
-`.env.local` out of Git and never put a secret token in a `VITE_` variable.
+### Community provider limits
+
+OpenStreetMap and the public Photon demo are community services, with no
+availability guarantee. This configuration is for moderate classroom
+project traffic. Photon allows reasonable project use and may throttle or
+block heavy traffic; use a hosted or self-hosted Photon instance before
+wider deployment. The client pacing here is per browser, not a global
+limit across all visitors.
+
+Follow the [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/):
+keep the visible attribution, preserve normal browser caching and Referer
+headers, and request only tiles being viewed. Do not add bulk downloads,
+offline maps, or tile prefetching. The app does not add those features.
+MapLibre GL JS replaces the Mapbox SDK so it makes no Mapbox tile,
+geocoding, or telemetry requests.
+
+Optional provider settings in `frontend/.env.local` (restart Vite after
+changing them; production builds need rebuilding):
+
+```sh
+VITE_MAP_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
+VITE_GEOCODING_URL=https://photon.komoot.io/api/
+```
+
+Use a compatible Photon API for search and OSM-derived raster tiles for
+the map. If a replacement tile provider requires additional attribution,
+update the visible map credit to match its terms. Leave `.env.local` out
+of Git. Existing `VITE_MAPBOX_TOKEN` settings can be removed; they are no
+longer read.
 
 ## Issue 2 pages
 
