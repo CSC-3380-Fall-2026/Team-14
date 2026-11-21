@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
             departure_airport = departure_airport.toUpperCase();
 
             Map<String, String> auth = new HashMap<>();
-            auth.put("api_key", "api_key");
+            auth.put("api_key", "api__key");
             auth.put("engine", "google_flights_calendar");
 
             SerpApi client = new SerpApi(auth);
