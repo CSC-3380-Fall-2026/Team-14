@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.16'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    maven { url "https://jitpack.io" }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.github.serpapi:serpapi-java:1.1.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('runPlaces', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.example.PlacesQuery' // indetifying the class that conatins my main method 
+}
+springBoot {
+    mainClass = 'org.example.GeauxTravelApplication'
+}

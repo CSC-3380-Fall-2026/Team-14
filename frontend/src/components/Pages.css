@@ -1,0 +1,72 @@
+.content-page {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: clamp(32px, 6vw, 64px) 24px;
+}
+.content-page.account-page { max-width: 650px; }
+.content-page h1 { margin: 0 0 16px; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.15; }
+.content-page h2 { margin: 0 0 16px; font-size: 1.35rem; }
+.content-page h3 { margin: 12px 0; font-size: 1.12rem; }
+.content-page p { line-height: 1.6; }
+.content-page a { color: #5d4272; text-underline-offset: 4px; }
+.page-intro { max-width: 76ch; margin: 0 0 24px; color: #514956; }
+.page-panel { min-width: 0; margin: 0 0 24px; padding: clamp(18px, 3vw, 28px); border: 1px solid #ded3e4; border-radius: 10px; background: #fffdf9; overflow-wrap: anywhere; }
+.scope-notice { margin: 0 0 24px; padding: 16px; border-radius: 6px; background: #f0e9f2; color: #51405d; }
+.content-page .form-field { min-width: 0; }
+.content-page .form-field select,
+.content-page .form-field textarea,
+.comparison-controls select { display: block; width: 100%; min-height: 48px; padding: 12px; border: 1px solid #a99caf; border-radius: 6px; background: #fff; color: #29232e; font: inherit; }
+.content-page textarea { resize: vertical; }
+.content-page input[readonly],
+.content-page select:disabled { background: #f1eef2; color: #514956; opacity: 1; }
+.content-page select[aria-invalid='true'],
+.content-page textarea[aria-invalid='true'] { border: 2px solid #a32d3a; }
+.content-page select:focus-visible,
+.content-page textarea:focus-visible,
+.stable-heading:focus { outline: 3px solid #78548f; outline-offset: 4px; }
+.form-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
+.field-hint { margin: 8px 0 16px; color: #514956; font-size: 0.9rem; }
+.page-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.page-button { min-height: 48px; max-width: 100%; padding: 12px 18px; border: 1px solid #5d4272; border-radius: 6px; background: #5d4272; color: #fff; font: inherit; font-weight: 600; line-height: 1.35; }
+.page-button:hover { background: #4b335e; }
+.page-button.secondary { background: transparent; color: #5d4272; }
+.page-button.secondary:hover { background: #f0e9f2; }
+.page-button.danger { border-color: #962635; background: #962635; }
+.page-button:disabled { cursor: not-allowed; opacity: 0.55; }
+.page-status { color: #51405d; }
+.page-status:empty { margin: 0; }
+.page-links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 24px; }
+.page-links a { padding: 10px 0; line-height: 1.4; }
+.example-badge { display: inline-block; padding: 5px 10px; margin-bottom: 12px; border-radius: 4px; background: #e9dfee; color: #5d4272; font-size: 0.85rem; font-weight: 700; }
+.plan-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: 0; margin: 24px 0; list-style: none; }
+.plan-card { margin: 0; }
+.compact-details,
+.trip-summary { display: grid; gap: 16px; margin: 20px 0; }
+.trip-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.compact-details div,
+.trip-summary div { min-width: 0; }
+.compact-details dt,
+.trip-summary dt { margin-bottom: 5px; font-weight: 700; color: #514956; font-size: 0.9rem; }
+.compact-details dd,
+.trip-summary dd { margin: 0; overflow-wrap: anywhere; }
+.summary-notes { grid-column: 1 / -1; white-space: pre-wrap; }
+.confirm-panel { margin-top: 16px; padding: 16px; border: 1px solid #bda9c9; border-radius: 6px; background: #f6f0f8; }
+.confirm-panel > p { margin-top: 0; }
+.reset-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid #ded3e4; }
+.stable-heading { margin-top: 28px !important; border-radius: 3px; }
+.itinerary-days { margin-top: 24px; }
+.activity-list { padding-left: 24px; line-height: 1.6; }
+.activity-list li + li { margin-top: 10px; }
+.comparison-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 20px 0; }
+.comparison-controls label { font-weight: 600; }
+.comparison-controls select { width: auto; max-width: 100%; }
+.quote-price { margin-bottom: 0; font-size: 1.6rem; font-weight: 700; color: #5d4272; }
+.quote-price span { font-size: 0.95rem; }
+@media (max-width: 620px) {
+  .form-columns, .plan-grid, .trip-summary { grid-template-columns: minmax(0, 1fr); }
+  .content-page { padding-left: 20px; padding-right: 20px; }
+  .page-actions { align-items: stretch; flex-direction: column; }
+  .page-actions .page-button { width: 100%; }
+  .page-links { flex-direction: column; gap: 2px; }
+}

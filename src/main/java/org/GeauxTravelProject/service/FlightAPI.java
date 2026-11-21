@@ -1,0 +1,251 @@
+package org.GeauxTravelProject.service;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import serpapi.SerpApi;
+import serpapi.SerpApiException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+    @Service
+    public class FlightAPI {
+        //remove when done testing
+        public static void main(String[] args) {
+            findNearestAirport(30.471165, -91.147385);
+        }
+
+        /**
+         * Generates a JsonObject of different outbound and return dates with different prices
+         * @param destination_airport closest airport generated from the lat and lngs given
+         * @param departure_airport provided home airport from user
+         * @return JsonObject data
+         */
+        public static JsonObject bestFlightPrices(String destination_airport, String departure_airport) {
+            destination_airport = destination_airport.toUpperCase();
+            departure_airport = departure_airport.toUpperCase();
+
+            Map<String, String> auth = new HashMap<>();
+            auth.put("api_key", "api_key");
+            auth.put("engine", "google_flights_calendar");
+
+            SerpApi client = new SerpApi(auth);
+            Map<String, String> params = new HashMap<>();
+
+            params.put("departure_id", departure_airport);
+            params.put("arrival_id", destination_airport);
+            params.put("currency", "USD");
+            params.put("type", "1");
+
+            JsonObject data = null;
+
+            try {
+                data = client.search(params);
+            } catch (SerpApiException e) {
+                throw new RuntimeException(e);
+            }
+
+            //use for testing - can delete later
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            System.out.println(gson.toJson(data));
+
+            //Ruby take this info, find the best priced flight and return the
+            // dates so generateFlight, PlaceRandomizer, and getSevenDayForecast can use it
+            return data;
+        }
+
+
+        /**
+             * Generates about 3-4 separate flight info using the given parameters. It loops through all the different flight
+             * objects saves it to a reference of 'FlightQueury', which is then stored in a map. Must use a key to access
+             * the separate instances inside the map which can then be used like a normal instance.
+             *
+             * @param destination_airport, departure_airport, type, outbound_date, return_date
+             * @return all_flight_data
+             */
+        public static Map<String, FlightQueury> generateFlight(String destination_airport, String departure_airport, String type, String outbound_date, String return_date)  {
+            destination_airport = destination_airport.toUpperCase();
+            departure_airport = departure_airport.toUpperCase();
+
+            Map<String, FlightQueury> all_flight_data = new HashMap<>();
+
+            //API stuff - feeding it the parameters
+            Map<String, String> auth = new HashMap<>();
+            auth.put("api_key", "api_key");
+            SerpApi client = new SerpApi(auth);
+            Map<String, String> params = new HashMap<>();
+            params.put("engine", "google_flights");
+            params.put("departure_id", destination_airport);
+            params.put("arrival_id", departure_airport);
+            params.put("type", type);
+            params.put("outbound_date", outbound_date);
+            params.put("return_date", return_date);
+            JsonObject data = null;
+            try {
+                data = client.search(params);
+            } catch (SerpApiException e) {
+                throw new RuntimeException(e);
+            }
+
+
+            JsonArray bestFlights = data.getAsJsonArray("best_flights");
+            JsonArray otherFlights = data.getAsJsonArray("other_flights");
+
+            //chooses Array best_flights unless empty, then chooses Array other_flights
+            JsonArray flights = (bestFlights != null && !bestFlights.isEmpty()) ? bestFlights : otherFlights;
+
+            int count_flights = flights.size();
+
+            //continually loops through every generated flight data from the API and saves it to an instance of FlightQueury
+            //If the value retrieved is null then it fills it with placeholders
+            for (int i = 0; i < count_flights; i++) {
+
+                //GOOD - this returns the FIRST flight: info
+                JsonObject firstFlight = flights.get(i).getAsJsonObject();
+
+                //This puts us at the flights array
+                JsonArray nested_firstFlights = firstFlight.getAsJsonArray("flights");
+
+                //This puts us IN the flights array
+                JsonObject nested_nested_firstFlights = nested_firstFlights.get(0).getAsJsonObject();
+
+                //This puts us IN the departure airport field
+                JsonObject leave_airport = nested_nested_firstFlights.getAsJsonObject("departure_airport");
+                String leave_airportName = leave_airport.has("name") ? leave_airport.get("name").getAsString() : "N/A";
+                String leave_airportCode = leave_airport.has("id") ? leave_airport.get("id").getAsString() : "N/A";
+                String leave_departureTime = leave_airport.has("time") ? leave_airport.get("time").getAsString() : "N/A";
+
+                //This puts us In the arrival airport field
+                JsonObject arrive_airport = nested_nested_firstFlights.getAsJsonObject("arrival_airport");
+                String arrive_airportName = arrive_airport.has("name") ? arrive_airport.get("name").getAsString() : "N/A";
+                String arrive_airportCode = arrive_airport.has("id") ? arrive_airport.get("id").getAsString() : "N/A";
+                String arrive_departureTime = arrive_airport.has("time") ? arrive_airport.get("time").getAsString() : "N/A";
+
+                Integer duration = nested_nested_firstFlights.has("duration") ? nested_nested_firstFlights.get("duration").getAsInt() : 0;
+                String airline = nested_nested_firstFlights.has("airline") ? nested_nested_firstFlights.get("airline").getAsString() : "N/A";
+                String travel_class = nested_nested_firstFlights.has("travel_class") ? nested_nested_firstFlights.get("travel_class").getAsString() : "N/A";
+                String flight_number = nested_nested_firstFlights.has("flight_number") ? nested_nested_firstFlights.get("flight_number").getAsString() : "N/A";
+                Boolean flight_overnight = nested_nested_firstFlights.has("overnight") ? nested_nested_firstFlights.get("overnight").getAsBoolean() : false;
+                Integer price = firstFlight.has("price") ? firstFlight.get("price").getAsInt() : 0;
+
+                Integer layover_duration = 0;
+                String layover_name = "";
+                String layover_id = "";
+                Boolean layover_overnight = false;
+
+
+                //This puts us IN the layover array
+                if (!nested_firstFlights.isJsonNull()) {
+                    JsonObject layovers = nested_firstFlights.get(1).getAsJsonObject();
+                    layover_duration = layovers.has("duration") ? layovers.get("duration").getAsInt() : 0;
+                    layover_name = layovers.has("name") ? layovers.get("name").getAsString() : "N/A";
+                    layover_id = layovers.has("id") ? layovers.get("id").getAsString() : "N/A";
+                    layover_overnight = nested_nested_firstFlights.has("overnight") ? layovers.get("overnight").getAsBoolean() : false;
+                }
+
+
+
+                //test - use this to check if the data retrieved is right
+                //System.out.println("departure airport "+ leave_airportName + leave_airportCode+ leave_departureTime +
+                //        "\n arrival airport"+arrive_airportName+ arrive_airportCode+ arrive_departureTime+
+                //        "\n duration "+ duration+ " airline "+ airline+ " travel class -end\n");
+
+                //test - use this to print the original nested JSON elements given by the AI
+                //Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                //System.out.println(gson.toJson(bestFlights));
+
+                FlightQueury temp_flight_data = new FlightQueury
+                        ( leave_airportName, leave_airportCode, leave_departureTime, arrive_airportName,
+                                arrive_airportCode, arrive_departureTime, duration, airline, travel_class, flight_number, flight_overnight, price,
+                                layover_duration, layover_name, layover_id, layover_overnight);
+
+
+                //Create a dynamic "name" string for this specific instance
+                String dynamicReferenceName = "flight_data_" + i;
+
+                all_flight_data.put(dynamicReferenceName, temp_flight_data);
+            }
+            //gets the info for the flights and prints to the terminal
+            for (Map.Entry<String, FlightQueury> entry : all_flight_data.entrySet()) {
+                FlightQueury flight = entry.setValue(entry.getValue());
+                System.out.print ("\n |departure airport name: " + flight.leave_airportName + " | duration: " +
+                        flight.duration + "mins"+ " | arrival airport name: " + flight.arrive_airportName + " | flight layover name: " +
+                        flight.layover_name + " overnight layover?: " + flight.flight_overnight +
+                        " | price: $" + flight.price + "USD" + " | airline: " + flight.airline + "|");
+            }
+
+            return all_flight_data;
+        }
+
+        /**
+         * finds the closest airport based on the given lat and long
+         * @param latitude given latitude
+         * @param longitude given longitude
+         * @return calls bestFlightPrices if found a suitable airport; if not returns an empty jsonobject
+         */
+        public static JsonObject findNearestAirport(double latitude, double longitude) {
+            //based off of the lat and long it is going to find the nearest airport
+            //then it will call 'generateFlight' using that info
+
+            String leave = "MSY";
+            int zoom = 14;
+            String airport_name = null;
+            JsonObject emptyJson = new JsonObject();
+
+            while (zoom <= 50) {
+                Map<String, String> auth = new HashMap<>();
+                auth.put("api_key", "api_key");
+                auth.put("engine", "google_maps_autocomplete");
+
+                SerpApi client = new SerpApi(auth);
+                Map<String, String> parameter = new HashMap<>();
+
+                String zoom2 = Integer.toString(zoom);
+                String lat_long_coordinates = "@" + latitude + "," + longitude + "," + zoom2 + "z";
+
+                parameter.put("q", "airport");
+                parameter.put("ll", lat_long_coordinates);
+
+                try {
+                    JsonObject results = client.search(parameter);
+                    var suggestions = results.get("suggestions");
+
+                    if (suggestions.isJsonNull()) {
+                        zoom += 5;
+                        continue;
+                    }
+
+                    for (int i = 0; i < suggestions.getAsJsonArray().size(); i++) {
+                        JsonArray suggestions_lvl1 = suggestions.getAsJsonArray();
+                        JsonObject airport_suggestion = suggestions_lvl1.get(i).getAsJsonObject();
+                        airport_name = airport_suggestion.has("value") ? airport_suggestion.get("value").getAsString() : "N/A";
+
+                        if (airport_name.equals("N/A")) {
+                            continue;
+                        }
+                        if (airport_name.matches(".*\\([a-zA-Z]{3}\\)$")) {
+                            int len = airport_name.length();
+                            String airport_code = airport_name.substring(len - 4, len - 1);
+
+                            System.out.println("\nfound a close airport to coordinates " + airport_name);
+                            System.out.println("\nfound airport code " + airport_code);
+
+                            return bestFlightPrices(airport_code, leave);
+                        }
+                    }
+
+                } catch (SerpApiException ex) {
+                    System.out.println("Exception:");
+                    System.out.println(ex.toString());
+                    break;
+                }
+
+            }
+            return emptyJson;
+        }
+
+    }
+
