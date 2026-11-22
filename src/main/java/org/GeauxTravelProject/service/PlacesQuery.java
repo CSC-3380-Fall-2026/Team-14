@@ -38,7 +38,11 @@ public class PlacesQuery {
 
     private static final String[] MEAL_TYPES = {
         "Breakfast", "Lunch", "Dinner"
-};
+    };
+
+    // indoor activity categories
+    private static final List<String> INDOOR_CATEGORIES = List.of("entertainment.museum","entertainment.cinema", "entertainment.bowling_alley",
+    "entertainment.escape_game","entertainment.amusement_arcade");
 
     private static final HttpClient CLIENT = HttpClient.newHttpClient(); // connecting my program to Geoapify
     private static final Random RANDOM = new Random(); // random number generator
@@ -215,6 +219,88 @@ public class PlacesQuery {
         return picked;
     }
 
+    // filters activities based on weather
+    public static JsonArray filterActivitiesByWeather(JsonArray activities, DailyForecast forecast) {
+
+        if (activities == null) {
+            return new JsonArray();
+        }
+
+        // keeps all activities if weather is unavailable
+        if (forecast == null || forecast.getCondition() == null) {
+            return activities.deepCopy();
+        }
+
+        String condition = forecast.getCondition().toLowerCase(java.util.Locale.ROOT);
+
+        // checks for bad weather
+        boolean badWeather = condition.contains("rain")
+                || condition.contains("snow")
+                || condition.contains("storm")
+                || condition.contains("drizzle")
+                || condition.contains("shower")
+                || condition.contains("sleet")
+                || condition.contains("hail")
+                || forecast.getHighTemperature() > 95
+                || forecast.getLowTemperature() < 32;
+
+        // keeps all activities during good weather
+        if (!badWeather) {
+            return activities.deepCopy();
+        }
+
+        JsonArray indoorActivities = new JsonArray();
+
+        // checks each activity
+        for (JsonElement element : activities) {
+
+            if (!element.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject place = element.getAsJsonObject();
+
+            // checks if categories exist
+            if (!place.has("properties") || !place.get("properties").isJsonObject()) {
+                continue;
+            }
+
+            JsonObject properties = place.getAsJsonObject("properties");
+
+            if (!properties.has("categories") || !properties.get("categories").isJsonArray()) {
+                continue;
+            }
+
+            JsonArray categories = properties.getAsJsonArray("categories");
+
+            // checks for indoor categories
+            for (JsonElement category : categories) {
+
+                if (!category.isJsonPrimitive() || !category.getAsJsonPrimitive().isString()) {
+                    continue;
+                }
+
+                String type = category.getAsString().toLowerCase(java.util.Locale.ROOT);
+
+                boolean isIndoor = false;
+
+                for (String indoor : INDOOR_CATEGORIES) {
+                    if (type.equals(indoor) || type.startsWith(indoor + ".")) {
+                        isIndoor = true;
+                        break;
+                    }
+                }
+
+                // adds indoor activity once
+                if (isIndoor) {
+                    indoorActivities.add(place.deepCopy());
+                    break;
+                }
+            }
+        }
+        return indoorActivities;
+    }
+
     // makes an itinerary for each day of the trip
     public static JsonObject generateDailyItinerary(double latitude, double longitude, LocalDate startDate, LocalDate endDate) {
         
@@ -238,6 +324,15 @@ public class PlacesQuery {
         // stores the itinerary and each day
         JsonObject itinerary = new JsonObject(); 
         JsonArray days = new JsonArray();
+
+        // gets the weather forecast
+        List<DailyForecast> forecast = new ArrayList<>();
+
+        try {
+            forecast = WeatherQuery.getSevenDayForecastData(latitude, longitude);
+        } catch (IllegalStateException e) {
+            System.out.println("Weather unavailable: " + e.getMessage());
+        }
 
        // finds places for each meal and activities
         JsonArray breakfastPlaces = fetchPlacesSafely("catering.cafe", latitude, longitude, apiKey);
@@ -271,23 +366,54 @@ public class PlacesQuery {
             JsonObject day = new JsonObject();
             day.addProperty("date", date.toString());
 
-        // picks a place for breakfast
-        List<String> breakfast = getRandomNames(breakfastPool, 1, usedRestaurants);
+        
+        // sets meal times
+        LocalDateTime breakfastTime = date.atTime(9, 0);
+        LocalDateTime lunchTime = date.atTime(12, 30);
+        LocalDateTime dinnerTime = date.atTime(18, 30);
 
-        // picks places for lunch and dinner
-        List<String> otherMeals = getRandomNames( restaurants, 2, usedRestaurants);
+        // picks restaurants that are open
+        List<String> breakfast = getRandomNames(
+                filterByOpeningHours(breakfastPool, breakfastTime), 1, usedRestaurants);
+
+        List<String> lunch = getRandomNames(
+                filterByOpeningHours(restaurants, lunchTime), 1, usedRestaurants);
+
+        List<String> dinner = getRandomNames(
+                filterByOpeningHours(restaurants, dinnerTime), 1, usedRestaurants);
 
         // puts each place with its meal
         JsonObject food = new JsonObject();
 
         food.addProperty("Breakfast", getNameAt(breakfast, 0));
-        food.addProperty("Lunch", getNameAt(otherMeals, 0));
-        food.addProperty("Dinner", getNameAt(otherMeals, 1));
-
+        food.addProperty("Lunch", getNameAt(lunch, 0));
+        food.addProperty("Dinner", getNameAt(dinner, 0));
+       
         day.add("restaurants", food);
 
-        // picks 2 activities for the day
-        List<String> activityNames = getRandomNames(activities, ACTIVITIES_PER_DAY, usedActivities);
+        // finds the weather for this date
+        DailyForecast dailyWeather = null;
+
+        for (DailyForecast forecastDay : forecast) {
+            if (forecastDay.getDate().equals(date.toString())) {
+                dailyWeather = forecastDay;
+                break;
+            }
+        }
+
+        // checks if weather is available
+        if (dailyWeather == null) {
+            day.addProperty("weatherStatus", "Forecast unavailable for this date");
+        } else {
+            day.addProperty("weatherStatus", "Forecast available");
+            day.addProperty("weatherCondition", dailyWeather.getCondition());
+        }
+
+        // filters activities based on weather
+        JsonArray suitableActivities = filterActivitiesByWeather(activities, dailyWeather);
+
+        // picks activities that are open
+        List<String> activityNames = getRandomNames(filterByOpeningHours(suitableActivities, date.atTime(14, 0)),ACTIVITIES_PER_DAY, usedActivities);
 
         JsonArray dailyActivities = new JsonArray();
 
@@ -297,7 +423,10 @@ public class PlacesQuery {
         }
 
         day.add("activities", dailyActivities);
-
+        // warns when no suitable activities are found
+        if (activityNames.isEmpty()) {
+            day.addProperty("activityWarning", "No suitable unused activities found for this day.");
+        }       
         days.add(day);
     }
 
@@ -385,6 +514,48 @@ public class PlacesQuery {
         OPEN,
         CLOSED,
         UNKNOWN
+    }
+
+
+    // removes places that are closed at the visit time
+    public static JsonArray filterByOpeningHours(JsonArray places, LocalDateTime visitTime) {
+        JsonArray available = new JsonArray();
+
+        if (places == null) {
+            return available;
+        }
+
+        for (JsonElement element : places) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject place = element.getAsJsonObject();
+
+            if (!place.has("properties") || !place.get("properties").isJsonObject()) {
+                available.add(place);
+                continue;
+            }
+
+            JsonObject properties = place.getAsJsonObject("properties");
+
+            String hours = null;
+
+            if (properties.has("opening_hours")
+                    && properties.get("opening_hours").isJsonPrimitive()
+                    && properties.get("opening_hours").getAsJsonPrimitive().isString()) {
+                hours = properties.get("opening_hours").getAsString();
+            }
+
+            OpeningStatus status = evaluateOpeningHours(hours, visitTime);
+
+            // keeps open places and places with unknown hours
+            if (status != OpeningStatus.CLOSED) {
+                available.add(place);
+            }
+        }
+
+        return available;
     }
     
     // checks basic opening hours for a planned visit, complex schedules return UNKNOWN instead of guessing.

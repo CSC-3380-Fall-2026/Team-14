@@ -6,10 +6,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
+import org.GeauxTravelProject.service.DailyForecast;
 import org.GeauxTravelProject.service.PlacesQuery;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -266,4 +268,71 @@ public class PlacesQueryTest {
                 PlacesQuery.isBreakfastCandidate(place)
         );
     }
+
+    //TEST 11: Weather-based filtering
+    @Test
+    void testWeatherFiltersOutdoorActivities() {
+
+        // creates sample activities
+        JsonArray activities = new JsonArray();
+
+        JsonObject museum = new JsonObject();
+        JsonObject museumDetails = new JsonObject();
+        JsonArray museumCategories = new JsonArray();
+        museumCategories.add("entertainment.museum");
+        museumDetails.addProperty("name", "Art Museum");
+        museumDetails.add("categories", museumCategories);
+        museum.add("properties", museumDetails);
+        activities.add(museum);
+
+        JsonObject park = new JsonObject();
+        JsonObject parkDetails = new JsonObject();
+        JsonArray parkCategories = new JsonArray();
+        parkCategories.add("leisure.park");
+        parkDetails.addProperty("name", "City Park");
+        parkDetails.add("categories", parkCategories);
+        park.add("properties", parkDetails);
+        activities.add(park);
+
+        // creates rainy weather
+        DailyForecast rainyDay = new DailyForecast(
+                "2026-11-24", 70, 55, 0.5, "Moderate rain");
+
+        // filters activities
+        JsonArray filtered = PlacesQuery.filterActivitiesByWeather(
+                activities, rainyDay);
+
+        // checks that only the museum remains
+        assertEquals(1, filtered.size());
+        assertEquals("Art Museum",
+                PlacesQuery.getPlaceName(filtered.get(0).getAsJsonObject()));
+    }
+
+    // TEST 12: Checks the pening hours of a resturant
+    @Test
+    void testOpeningHoursFilter() {
+
+        // creates a restaurant
+        JsonArray restaurants = new JsonArray();
+        JsonObject restaurant = new JsonObject();
+        JsonObject properties = new JsonObject();
+
+        properties.addProperty("name", "Test Restaurant");
+        properties.addProperty("opening_hours", "Mo-Fr 17:00-22:00");
+        restaurant.add("properties", properties);
+        restaurants.add(restaurant);
+
+        // checks monday at lunchtime
+        LocalDateTime lunchTime = LocalDateTime.of(2026, 11, 23, 12, 30);
+
+        JsonArray available = PlacesQuery.filterByOpeningHours(
+                restaurants, lunchTime);
+
+        // checks that the closed restaurant is removed
+        assertEquals(0, available.size());
+    }
+
+
+    
+
 }
