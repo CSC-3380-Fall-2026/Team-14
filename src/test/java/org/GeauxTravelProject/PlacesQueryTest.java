@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 
 import org.GeauxTravelProject.service.DailyForecast;
 import org.GeauxTravelProject.service.PlacesQuery;
+import org.GeauxTravelProject.service.TripPreferences;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -152,21 +153,22 @@ public class PlacesQueryTest {
 
             assertNotNull(activities);
 
-            // The generator allows up to two activities per day.
+            // checks the default maximum of two activities per day
             assertTrue(
                     activities.size() <= 2,
                     "A day contains more than two activities"
             );
 
-            for (JsonElement activity : activities) {
-
-                String name = activity.getAsString();
-
-                assertTrue(
-                        usedActivities.add(name),
-                        "Duplicate activity found: " + name
-                );
-            }
+            
+        for (JsonElement activity : activities) {
+                // gets the activity name from the JSON object
+                JsonObject activityObject = activity.getAsJsonObject();
+                String name = activityObject.get("name").getAsString();
+    
+                // checks that the activity has not been used
+                assertTrue(usedActivities.add(name), "Duplicate activity found: " + name);
+                }
+    
         }
     }
 
@@ -332,7 +334,257 @@ public class PlacesQueryTest {
         assertEquals(0, available.size());
     }
 
+    // TEST 13: Checks relaxed pace
+    @Test
+    void testRelaxedPace() {
 
-    
+        int activityCount = PlacesQuery.getActivityCount("Relaxed");
+
+        // checks that relaxed pace has one activity
+        assertEquals(1, activityCount);
+    }
+
+    // TEST 14: Checks standard pace
+    @Test
+    void testStandardPace() {
+
+        int activityCount = PlacesQuery.getActivityCount("Standard");
+
+        // checks that standard pace has two activities
+        assertEquals(2, activityCount);
+    }
+
+    // TEST 15: Checks active pace
+    @Test
+    void testActivePace() {
+
+        int activityCount = PlacesQuery.getActivityCount("Active");
+
+        // checks that active pace has three activities
+        assertEquals(3, activityCount);
+    }
+
+    // TEST 16: Checks scheduled activity times
+    @Test
+    void testActivityTimes() {
+
+        LocalDate date = LocalDate.of(2026, 11, 23);
+
+        // checks relaxed pace time
+        assertEquals(
+                date.atTime(14, 0),
+                PlacesQuery.getActivityTimes(date, 1).get(0)
+        );
+
+        // checks standard pace times
+        assertEquals(
+                date.atTime(10, 30),
+                PlacesQuery.getActivityTimes(date, 2).get(0)
+        );
+
+        assertEquals(
+                date.atTime(14, 0),
+                PlacesQuery.getActivityTimes(date, 2).get(1)
+        );
+
+        // checks active pace time
+        assertEquals(
+                date.atTime(16, 0),
+                PlacesQuery.getActivityTimes(date, 3).get(2)
+        );
+    }
+
+
+    // TEST 17: Checks art interest filtering
+    @Test
+    void testArtInterest() {
+
+        JsonArray activities = new JsonArray();
+
+        activities.add(createTestPlace(
+                "Art Museum", "entertainment.museum"));
+
+        activities.add(createTestPlace(
+                "City Park", "leisure.park"));
+
+        // filters activities based on art interest
+        JsonArray filtered = PlacesQuery.filterActivitiesByInterests(
+                activities, java.util.List.of("Art"));
+
+        // checks that only the museum remains
+        assertEquals(1, filtered.size());
+        assertEquals("Art Museum",
+                PlacesQuery.getPlaceName(filtered.get(0).getAsJsonObject()));
+    }
+
+    // TEST 18: Checks outdoors interest filtering
+    @Test
+    void testOutdoorsInterest() {
+
+        JsonArray activities = new JsonArray();
+
+        activities.add(createTestPlace(
+                "City Park", "leisure.park"));
+
+        activities.add(createTestPlace(
+                "Art Museum", "entertainment.museum"));
+
+        // filters activities based on outdoors interest
+        JsonArray filtered = PlacesQuery.filterActivitiesByInterests(
+                activities, java.util.List.of("Outdoors"));
+
+        // checks that only the park remains
+        assertEquals(1, filtered.size());
+        assertEquals("City Park",
+                PlacesQuery.getPlaceName(filtered.get(0).getAsJsonObject()));
+    }
+
+    // TEST 19: Checks history interest filtering
+    @Test
+    void testHistoryInterest() {
+
+        JsonArray activities = new JsonArray();
+
+        activities.add(createTestPlace(
+                "Historic Site", "heritage"));
+
+        activities.add(createTestPlace(
+                "City Park", "leisure.park"));
+
+        // filters activities based on history interest
+        JsonArray filtered = PlacesQuery.filterActivitiesByInterests(
+                activities, java.util.List.of("History"));
+
+        // checks that only the historic site remains
+        assertEquals(1, filtered.size());
+        assertEquals("Historic Site",
+                PlacesQuery.getPlaceName(filtered.get(0).getAsJsonObject()));
+    }
+
+    // TEST 20: Checks food interest filtering
+    @Test
+    void testFoodInterest() {
+
+        JsonArray activities = new JsonArray();
+
+        activities.add(createTestPlace(
+                "Food Market", "catering.restaurant"));
+
+        activities.add(createTestPlace(
+                "Art Museum", "entertainment.museum"));
+
+        // filters activities based on food interest
+        JsonArray filtered = PlacesQuery.filterActivitiesByInterests(
+                activities, java.util.List.of("Food"));
+
+        // checks that only the food location remains
+        assertEquals(1, filtered.size());
+        assertEquals("Food Market",
+                PlacesQuery.getPlaceName(filtered.get(0).getAsJsonObject()));
+        }
+
+    // TEST 21: Checks that itinerary uses traveler preferences
+    @Test
+    void testItineraryWithPreferences() {
+
+        // creates traveler preferences with active pace
+        TripPreferences preferences = new TripPreferences(
+                START_DATE.toString(),
+                END_DATE.toString(),
+                null,
+                "USD",
+                1,
+                java.util.List.of(),
+                "Active",
+                ""
+        );
+
+        // generates an itinerary using the preferences
+        JsonObject itinerary = PlacesQuery.generateDailyItinerary(
+                LATITUDE, LONGITUDE, START_DATE, END_DATE, preferences
+        );
+
+        JsonArray days = itinerary.getAsJsonArray("days");
+
+        // checks that seven days were generated
+        assertEquals(7, days.size());
+
+        // checks that active pace allows up to three activities
+        for (JsonElement element : days) {
+
+            JsonArray activities = element.getAsJsonObject()
+                    .getAsJsonArray("activities");
+
+            assertNotNull(activities);
+            assertTrue(activities.size() <= 3);
+
+            // checks that each activity has a name and time
+            for (JsonElement activity : activities) {
+
+                JsonObject details = activity.getAsJsonObject();
+
+                assertTrue(details.has("name"));
+                assertTrue(details.has("time"));
+            }
+        }
+    }
+
+    // TEST 22: Checks hotel recommendation
+    @Test
+    void testHotelRecommendation() {
+
+        JsonObject itinerary = PlacesQuery.generateDailyItinerary(
+                LATITUDE, LONGITUDE, START_DATE, END_DATE
+        );
+
+        // checks that the itinerary includes a hotel field
+        assertTrue(itinerary.has("hotel"));
+
+        // checks that the hotel field is not JSON null
+        assertFalse(itinerary.get("hotel").isJsonNull());
+    }
+
+    // TEST 23: Checks total trip budget
+    @Test
+    void testBudgetCalculation() {
+
+        // creates preferences for two travelers
+        TripPreferences preferences = new TripPreferences(
+                START_DATE.toString(),
+                END_DATE.toString(),
+                new java.math.BigDecimal("600"),
+                "USD",
+                2,
+                java.util.List.of("Art"),
+                "Standard",
+                ""
+        );
+
+        JsonObject itinerary = PlacesQuery.generateDailyItinerary(
+                LATITUDE, LONGITUDE, START_DATE, END_DATE, preferences
+        );
+
+        JsonObject budget = itinerary.getAsJsonObject("budget");
+
+        // checks that budget information exists
+        assertNotNull(budget);
+
+        // checks total budget and category allocations
+        assertEquals(1200,
+                budget.get("totalBudget").getAsInt());
+
+        assertEquals(480,
+                budget.get("hotelBudget").getAsInt());
+
+        assertEquals(420,
+                budget.get("foodBudget").getAsInt());
+
+        assertEquals(300,
+                budget.get("activityBudget").getAsInt());
+
+        assertEquals("USD", budget.get("currency").getAsString());
+    }
+
+
 
 }
