@@ -1,6 +1,5 @@
 package org.GeauxTravelProject.service;
 
-import com.google.gson.JsonElement;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.regex.Matcher;
@@ -25,6 +24,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.springframework.stereotype.Service;
+
+import org.GeauxTravelProject.service.TripPreferences;
+import java.math.BigDecimal; 
 
 // Randomized itinerary: restaurant, activity, and hotel
 @Service
@@ -301,9 +303,147 @@ public class PlacesQuery {
         return indoorActivities;
     }
 
-    // makes an itinerary for each day of the trip
-    public static JsonObject generateDailyItinerary(double latitude, double longitude, LocalDate startDate, LocalDate endDate) {
+
+    // filters activities based on the user's interests
+    public static JsonArray filterActivitiesByInterests(
+        JsonArray activities, List<String> interests) {
+            JsonArray filtered = new JsonArray();
+
+        // returns an empty list if no activities exist
+        if (activities == null) {
+            return filtered;
+        }
+
+        // keeps all activities if no interests were selected
+        if (interests == null || interests.isEmpty()) {
+            return activities.deepCopy();
+        }
+
+        // checks each activity
+        for (JsonElement element : activities) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject place = element.getAsJsonObject();
+
+            if (!place.has("properties")
+                    || !place.get("properties").isJsonObject()) {
+                continue;
+            }
+
+            JsonObject properties = place.getAsJsonObject("properties");
+
+            if (!properties.has("categories")
+                    || !properties.get("categories").isJsonArray()) {
+                continue;
+            }
+
+            JsonArray categories = properties.getAsJsonArray("categories");
+
+            // compares the activity categories with selected interests
+            boolean matchesInterest = false;
+
+            for (JsonElement categoryElement : categories) {
+                if (!categoryElement.isJsonPrimitive()
+                        || !categoryElement.getAsJsonPrimitive().isString()) {
+                    continue;
+                }
+
+                String category = categoryElement.getAsString()
+                        .toLowerCase(java.util.Locale.ROOT);
+
+                for (String interest : interests) {
+                    if (interest == null) {
+                        continue;
+                    }
+
+                    String selectedInterest = interest
+                            .toLowerCase(java.util.Locale.ROOT);
+
+                    if (selectedInterest.equals("art")
+                            && (category.contains("museum")
+                            || category.contains("gallery")
+                            || category.contains("arts"))) {
+                        matchesInterest = true;
+                    }
+
+                    if (selectedInterest.equals("outdoors")
+                            && (category.contains("park")
+                            || category.contains("nature")
+                            || category.contains("hiking")
+                            || category.contains("garden"))) {
+                        matchesInterest = true;
+                    }
+
+                    if (selectedInterest.equals("history")
+                            && (category.contains("historic")
+                            || category.contains("heritage")
+                            || category.contains("monument")
+                            || category.contains("memorial"))) {
+                        matchesInterest = true;
+                    }
+
+                    if (selectedInterest.equals("food")
+                            && (category.contains("catering")
+                            || category.contains("food"))) {
+                        matchesInterest = true;
+                    }
+                }
+            }
+
+            // adds the activity if it matches an interest
+            if (matchesInterest) {
+                filtered.add(place.deepCopy());
+            }
+        }
+
+        return filtered;
+    }   
+
+    // sets the number of activities based on daily pace
+    public static int getActivityCount(String pace) {
+        if (pace == null) {
+            return ACTIVITIES_PER_DAY;
+        }
+
+        switch (pace) {
+            case "Relaxed":
+                return 1;
+            case "Standard":
+                return 2;
+            case "Active":
+                return 3;
+            default:
+                return ACTIVITIES_PER_DAY;
+        }
+    }
+    // sets activity times based on daily pace
+    public static List<LocalDateTime> getActivityTimes(LocalDate date, int activityCount) {
+        List<LocalDateTime> times = new ArrayList<>();
         
+        if (activityCount == 1) {
+            times.add(date.atTime(14, 0));
+        } else {
+            times.add(date.atTime(10, 30));
+            times.add(date.atTime(14, 0));
+
+            if (activityCount >= 3) {
+                times.add(date.atTime(16, 0));
+            }
+        }
+
+        return times;
+    }   
+    
+    // generates an itinerary using the default settings
+    public static JsonObject generateDailyItinerary(double latitude, double longitude, LocalDate startDate, LocalDate endDate) {
+
+        return generateDailyItinerary(latitude, longitude, startDate, endDate, null);
+        }
+
+    // generates an itinerary using the user's preferences
+    public static JsonObject generateDailyItinerary(double latitude,double longitude, LocalDate startDate, LocalDate endDate, TripPreferences preferences) {    
         if (startDate == null || endDate == null || endDate.isBefore(startDate)) { // checks if the dates are valid
             throw new IllegalArgumentException("Invalid trip dates");
         }
@@ -337,7 +477,48 @@ public class PlacesQuery {
        // finds places for each meal and activities
         JsonArray breakfastPlaces = fetchPlacesSafely("catering.cafe", latitude, longitude, apiKey);
         JsonArray restaurants = fetchPlacesSafely("catering.restaurant", latitude, longitude, apiKey);
-        JsonArray activities = fetchPlacesSafely( "tourism.attraction,entertainment.museum,entertainment", latitude, longitude, apiKey);
+        JsonArray activities = fetchPlacesSafely("tourism.attraction,entertainment.museum,entertainment,leisure.park,catering.restaurant", latitude, longitude, apiKey);
+
+        // gets hotels near the travel destination
+        JsonArray hotels = fetchPlacesSafely("accommodation.hotel", latitude, longitude, apiKey);
+
+        // selects one hotel for the entire trip
+        List<String> selectedHotels = getRandomNames(hotels, 1, new HashSet<>());
+
+        // adds the selected hotel to the itinerary
+        itinerary.addProperty( "hotel", getNameAt(selectedHotels, 0));
+        
+        // calculates the total trip budget
+        if (preferences != null
+            && preferences.getBudgetPerTraveler() != null
+            && preferences.getTravelers() != null
+            && preferences.getTravelers() > 0) {
+
+        BigDecimal totalBudget = preferences.getBudgetPerTraveler()
+                .multiply(BigDecimal.valueOf(preferences.getTravelers()));
+
+        // divides the budget between hotels, food, and activities
+        BigDecimal hotelBudget = totalBudget.multiply(
+                new BigDecimal("0.40"));
+
+        BigDecimal foodBudget = totalBudget.multiply(
+                new BigDecimal("0.35"));
+
+        BigDecimal activityBudget = totalBudget
+                .subtract(hotelBudget)
+                .subtract(foodBudget);
+
+        JsonObject budget = new JsonObject();
+
+        budget.addProperty("totalBudget", totalBudget);
+        budget.addProperty("hotelBudget", hotelBudget);
+        budget.addProperty("foodBudget", foodBudget);
+        budget.addProperty("activityBudget", activityBudget);
+        budget.addProperty("currency", preferences.getCurrency());
+
+        // adds the budget breakdown to the itinerary
+        itinerary.add("budget", budget);
+    }
 
         // Filter breakfast candidates before generating the itinerary
         JsonArray breakfastPool = new JsonArray();
@@ -409,24 +590,47 @@ public class PlacesQuery {
             day.addProperty("weatherCondition", dailyWeather.getCondition());
         }
 
+        
         // filters activities based on weather
-        JsonArray suitableActivities = filterActivitiesByWeather(activities, dailyWeather);
+        JsonArray weatherActivities = filterActivitiesByWeather(activities, dailyWeather);
 
-        // picks activities that are open
-        List<String> activityNames = getRandomNames(filterByOpeningHours(suitableActivities, date.atTime(14, 0)),ACTIVITIES_PER_DAY, usedActivities);
+        // gets the user's selected interests
+        List<String> interests = preferences == null
+                ? null : preferences.getInterests();
+
+        // filters activities based on selected interests
+        JsonArray suitableActivities = filterActivitiesByInterests(weatherActivities, interests);
+
+        // gets the user's selected daily pace
+        String pace = preferences == null ? null : preferences.getPace();
+        int activityCount = getActivityCount(pace);
+
+        // gets the scheduled activity times
+        List<LocalDateTime> activityTimes = getActivityTimes(date, activityCount);
 
         JsonArray dailyActivities = new JsonArray();
 
-        // adds the activities to the list
-        for (String name : activityNames) {
-            dailyActivities.add(name);
-        }
+        // picks an activity for each scheduled time
+        for (LocalDateTime activityTime : activityTimes) {
+            JsonArray openActivities = filterByOpeningHours(suitableActivities, activityTime);
 
+        List<String> selected = getRandomNames(openActivities, 1, usedActivities);
+
+        if (!selected.isEmpty()) {
+            JsonObject activity = new JsonObject();
+
+            activity.addProperty("name", selected.get(0));
+            activity.addProperty("time", activityTime.toLocalTime().toString());
+
+            dailyActivities.add(activity);
+        }
+    }
         day.add("activities", dailyActivities);
+
         // warns when no suitable activities are found
-        if (activityNames.isEmpty()) {
+        if (dailyActivities.size() == 0) {
             day.addProperty("activityWarning", "No suitable unused activities found for this day.");
-        }       
+        }     
         days.add(day);
     }
 
