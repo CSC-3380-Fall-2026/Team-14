@@ -13,9 +13,23 @@ import org.springframework.stereotype.Service;
 
     @Service
     public class FlightAPI {
-        //remove when done testing
-        public static void main(String[] args) {
-            findNearestAirport(30.471165, -91.147385);
+
+        public final class TripHolder {
+            private static final ThreadLocal<String> AIRPORT = new ThreadLocal<>();
+
+            private TripHolder() {}
+
+            public static void setAirport(String airport) {
+                AIRPORT.set(airport);
+            }
+
+            public static String getAirport() {
+                return AIRPORT.get();
+            }
+
+            public static void clear() {
+                AIRPORT.remove();
+            }
         }
 
         /**
@@ -49,8 +63,8 @@ import org.springframework.stereotype.Service;
             }
 
             //use for testing - can delete later
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            System.out.println(gson.toJson(data));
+            //Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            //System.out.println(gson.toJson(data));
 
             //Ruby take this info, find the best priced flight and return the
             // dates so generateFlight, PlaceRandomizer, and getSevenDayForecast can use it
@@ -63,11 +77,11 @@ import org.springframework.stereotype.Service;
              * objects saves it to a reference of 'FlightQueury', which is then stored in a map. Must use a key to access
              * the separate instances inside the map which can then be used like a normal instance.
              *
-             * @param destination_airport, departure_airport, type, outbound_date, return_date
+             * @param departure_airport, type, outbound_date, return_date
              * @return all_flight_data
              */
-        public static Map<String, FlightQueury> generateFlight(String destination_airport, String departure_airport, String type, String outbound_date, String return_date)  {
-            destination_airport = destination_airport.toUpperCase();
+        public static Map<String, FlightQueury> generateFlight(String departure_airport, String outbound_date, String return_date)  {
+            String destination_airport = TripHolder.getAirport();
             departure_airport = departure_airport.toUpperCase();
 
             Map<String, FlightQueury> all_flight_data = new HashMap<>();
@@ -80,7 +94,7 @@ import org.springframework.stereotype.Service;
             params.put("engine", "google_flights");
             params.put("departure_id", destination_airport);
             params.put("arrival_id", departure_airport);
-            params.put("type", type);
+            params.put("type", "1");
             params.put("outbound_date", outbound_date);
             params.put("return_date", return_date);
             JsonObject data = null;
@@ -90,6 +104,7 @@ import org.springframework.stereotype.Service;
                 throw new RuntimeException(e);
             }
 
+            System.out.println("Flight info used to generate flight\n" +destination_airport+ departure_airport+ outbound_date+ return_date);
 
             JsonArray bestFlights = data.getAsJsonArray("best_flights");
             JsonArray otherFlights = data.getAsJsonArray("other_flights");
@@ -232,6 +247,8 @@ import org.springframework.stereotype.Service;
 
                             System.out.println("\nfound a close airport to coordinates " + airport_name);
                             System.out.println("\nfound airport code " + airport_code);
+
+                            TripHolder.setAirport(airport_code);
 
                             return bestFlightPrices(airport_code, leave);
                         }
