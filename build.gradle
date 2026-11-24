@@ -28,8 +28,8 @@ test {
 
 tasks.register('runPlaces', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'org.example.PlacesQuery' // indetifying the class that conatins my main method 
+    mainClass = 'org.example.PlacesQuery' // indetifying the class that conatins my main method
 }
 springBoot {
-    mainClass = 'org.example.GeauxTravelApplication'
+    mainClass = 'org.GeauxTravelProject.GeauxTravelApplication'
 }
