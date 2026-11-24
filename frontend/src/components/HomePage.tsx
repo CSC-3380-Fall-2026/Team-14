@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import './HomePage.css'
 import type { Destination } from '../tripDraft'
+import DestinationWeather from './DestinationWeather'
 
 const MapPage = lazy(() => import('./MapPage'))
 
@@ -31,6 +32,7 @@ export default function HomePage({ destination, onDestinationChange }: HomePageP
         </div>
       </section>
 
+      <DestinationWeather destination={destination} />
       <section className="destinations" id="destinations" aria-labelledby="destinations-title">
         <h2 id="destinations-title">A few places to start</h2>
         <p>Stay close to home or make a weekend of it.</p>

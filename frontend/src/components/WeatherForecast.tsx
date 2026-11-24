@@ -2,7 +2,7 @@ import './WeatherForecast.css'
 
 /**
  * Represents the weather forecast for one day.
- * 
+ *
  */
 export interface DailyForecast {
     date: string
@@ -14,6 +14,7 @@ export interface DailyForecast {
 
 interface WeatherForecastProps {
     forecast: DailyForecast[]
+    advice?: Record<string, string>
     loading?: boolean
     error?: string
 }
@@ -24,6 +25,7 @@ interface WeatherForecastProps {
  */
 export default function WeatherForecast({
     forecast,
+    advice = {},
     loading = false,
     error = ''
 }: WeatherForecastProps) {
@@ -46,10 +48,17 @@ export default function WeatherForecast({
                             <p>High: {day.highTemperature.toFixed(1)}°F</p>
                             <p>Low: {day.lowTemperature.toFixed(1)}°F</p>
                             <p>Precipitation: {day.precipitation.toFixed(2)} in</p>
+
+                            {advice[day.date] && (
+                                <p className="weather-advice">
+                                    <strong>Travel Tip: </strong>
+                                    {advice[day.date]}
+                                </p>
+                            )}
                         </article>
                     ))}
                 </div>
-                
+
             )}
             </section>
    )
